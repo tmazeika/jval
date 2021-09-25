@@ -1,0 +1,25 @@
+{
+  "name": "val",
+  "version": "0.1.0",
+  "description": "Simple and extensible JavaScript value validator and transformer.",
+  "main": "dist/index.js",
+  "author": "TJ Mazeika <mazeika.tj@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "prepack": "yarn test && yarn build",
+    "build": "rm -r dist && tsc && esbuild src/index.ts --bundle --minify --outfile=dist/index.js",
+    "test": "jest",
+    "lint": "eslint --fix . && prettier --write ."
+  },
+  "devDependencies": {
+    "@types/jest": "27.0.2",
+    "@types/node": "^16.10.1",
+    "esbuild": "^0.13.2",
+    "eslint": "^7.32.0",
+    "eslint-config-prettier": "^8.3.0",
+    "jest": "27.0.2",
+    "prettier": "^2.4.1",
+    "ts-jest": "27.0.2",
+    "typescript": "^4.4.3"
+  }
+}
