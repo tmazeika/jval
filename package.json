@@ -7,8 +7,9 @@
   "repository": "github:tmazeika/jval",
   "bugs": "https://github.com/tmazeika/jval/issues",
   "main": "dist/index.js",
+  "files": ["dist"],
   "scripts": {
-    "prepack": "yarn test && yarn build",
+    "prepack": "yarn lint && yarn test && yarn build",
     "build": "rm -r dist && tsc && esbuild src/index.ts --bundle --minify --outfile=dist/index.js",
     "test": "jest",
     "lint": "eslint --fix . && prettier --write ."
