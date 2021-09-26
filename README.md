@@ -219,7 +219,7 @@ is `Date`) will get converted to a JSON representation _before_ getting replaced
 by the replacer function, so the type information will once again be lost.
 
 JVal has a solution that combines the Schema world with the notion of a JSON
-codec that knows how to encode and decode any types you define an encoder and
+codec that knows how to encode and decode any type you define an encoder and
 decoder for. This also eliminates the need for an alternative JSON type for each
 model. Here's an example that can encode an object with Dates into JSON, and
 then back into an object with Dates:

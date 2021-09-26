@@ -26,5 +26,15 @@
     "prettier": "^2.4.1",
     "ts-jest": "27.0.2",
     "typescript": "^4.4.3"
-  }
+  },
+  "keywords": [
+    "validation",
+    "validate",
+    "schema",
+    "transformation",
+    "json",
+    "parsing",
+    "serialization",
+    "deserialization"
+  ]
 }
