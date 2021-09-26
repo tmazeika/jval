@@ -62,7 +62,7 @@ const badUser1: unknown = { name: 'Alice', age: '30' };
 const badUser2: unknown = { name: 'Bob', age: 19 };
 userSchema.isType(badUser1); // false
 userSchema.isType(badUser2); // false
-userSchema.isType(1);        // false
+userSchema.isType(1); // false
 
 // `isType` is actually a type guard:
 const unknownData: unknown = { name: 'Eve', age: 25 };
@@ -90,8 +90,8 @@ const schema2 = array(string(), {
 });
 
 schema2.isType(['a', 'b', 'c']); // true
-schema2.isType(['x', 'y']);      // false
-schema2.isType([1, 2, 3]);       // false
+schema2.isType(['x', 'y']); // false
+schema2.isType([1, 2, 3]); // false
 
 // [string, string]
 const schema3 = array(string(), {
@@ -113,9 +113,9 @@ const schema4 = array(string(), {
 // boolean
 const schema = boolean();
 
-schema.isType(true);  // true
+schema.isType(true); // true
 schema.isType(false); // true
-schema.isType(0);     // false
+schema.isType(0); // false
 ```
 
 ---
@@ -139,7 +139,7 @@ mapSchema.isType({ a: 1, b: 2 }); // false
 const setSchema = custom((v) => (v instanceof Set ? v : undefined));
 
 setSchema.isType(new Set([1, 2, 2, 3])); // true
-setSchema.isType([1, 2, 3]);             // false
+setSchema.isType([1, 2, 3]); // false
 ```
 
 ## JSON
@@ -238,7 +238,7 @@ const inv1: Invoice = {
 };
 
 const dateCodec: TypeCodec<Date, string> = {
-  jsonSchema: string().withMapper(v => new Date(v)),
+  jsonSchema: string().withMapper((v) => new Date(v)),
   isType: (v: unknown): v is Date => v instanceof Date,
   toJson: (v: Date): string => v.toISOString(),
 };
@@ -290,15 +290,15 @@ to apply to a value after it's been confirmed to be of the correct type. For
 example, one use case is when you write a custom `trimmedString` schema:
 
 ```typescript
-const trimmedString = string().withMapper(v => v.trim());
+const trimmedString = string().withMapper((v) => v.trim());
 
-trimmedString.map('   world ');    // 'world'
+trimmedString.map('   world '); // 'world'
 ```
 
 You can even map to a different type:
 
 ```typescript
-const stringyNumber = number().withMapper(v => String(v + 1));
+const stringyNumber = number().withMapper((v) => String(v + 1));
 
 stringyNumber.map(5); // '6'
 ```
@@ -309,7 +309,7 @@ models based on the return type of all mapped values. For example:
 ```typescript
 const userSchema = object({
   name: string(),
-  age: string().withMapper(v => Number(v)),
+  age: string().withMapper((v) => Number(v)),
 });
 
 type User = GetTypeFromMappedSchema<typeof userSchema>;

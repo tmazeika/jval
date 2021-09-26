@@ -2,9 +2,11 @@
   "name": "jval",
   "version": "0.1.0",
   "description": "Simple and extensible JavaScript value validator and transformer.",
-  "main": "dist/index.js",
   "author": "TJ Mazeika <mazeika.tj@gmail.com>",
   "license": "MIT",
+  "repository": "github:tmazeika/jval",
+  "bugs": "https://github.com/tmazeika/jval/issues",
+  "main": "dist/index.js",
   "scripts": {
     "prepack": "yarn test && yarn build",
     "build": "rm -r dist && tsc && esbuild src/index.ts --bundle --minify --outfile=dist/index.js",
