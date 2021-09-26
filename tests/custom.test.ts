@@ -13,7 +13,7 @@ describe('custom validation', () => {
     expect(string.isType(1)).toBe(false);
   });
   it('transforms', () => {
-    expect(number.withTransform((n) => n + 1).transform(3)).toBe(4);
-    expect(string.withTransform((s) => s.trim()).transform(' a')).toBe('a');
+    expect(number.withMapper((n) => n + 1).map(3)).toBe(4);
+    expect(string.withMapper((s) => s.trim()).map(' a')).toBe('a');
   });
 });

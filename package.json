@@ -1,5 +1,5 @@
 {
-  "name": "val",
+  "name": "jval",
   "version": "0.1.0",
   "description": "Simple and extensible JavaScript value validator and transformer.",
   "main": "dist/index.js",

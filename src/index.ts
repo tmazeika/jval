@@ -6,51 +6,168 @@ export { object } from './object';
 export { string } from './string';
 export { unknown } from './unknown';
 
+/**
+ * Given a schema `S`, this utility type determines the plain type of `S`.
+ *
+ * @example
+ * const schema = number();
+ * type SchemaType = GetTypeFromSchema<typeof schema>;
+ * // SchemaType = number
+ *
+ * @example
+ * const schema = object({
+ *   x: number(),
+ *   y: number({ eq: 1 as const }),
+ * });
+ * type SchemaType = GetTypeFromSchema<typeof schema>;
+ * // SchemaType = { x: number, y: 1 }
+ */
 export type GetTypeFromSchema<S> = S extends Schema<infer T, unknown>
   ? T
   : never;
 
-export type GetTransformFromSchema<S> = S extends Schema<unknown, infer U>
+/**
+ * Given a schema `S`, this utility type determines the mapped type of `S`.
+ *
+ * @example
+ * const schema = number().withMapper(v => String(v));
+ * type MappedSchemaType = GetTypeFromMappedSchema<typeof schema>;
+ * // MappedSchemaType = string
+ */
+export type GetTypeFromMappedSchema<S> = S extends Schema<unknown, infer U>
   ? U
   : never;
 
+/**
+ * A schema describes a type and can determine whether an unknown value matches
+ * that type. It is also able to map from a type that fits this scheme into a
+ * brand new type `U`.
+ */
 export abstract class Schema<T, U = T> {
+  /**
+   * Determines whether `v` is the type of this schema. The job of this function
+   * is two-fold: first to check that the underlying types are the same (for
+   * example, that a value has a type of 'string' for the `string()` schema);
+   * second, to check the validity of that value (for example, checking that a
+   * string has at least 3 characters for the `string({ minLength: 3 })`
+   * schema).
+   *
+   * @param v
+   */
   abstract isType(v: unknown): v is T;
 
-  abstract transform(v: T): U;
+  /**
+   * Maps from the type that this schema describes (for example, a string for
+   * the `string()` schema) into something else. The mapping function that this
+   * function calls can be changed with {@link Schema.withMapper}.
+   *
+   * @example
+   * const add1 = number().withMapper(v => v + 1);
+   * add1.map(5); // 6
+   *
+   * @example Chaining
+   * const add1 = number().withMapper(v => v + 1).withMapper(v => v * 2);
+   * add1.map(5); // 12
+   *
+   * @param v
+   */
+  abstract map(v: T): U;
 
-  validateAndTransform(v: unknown): U | undefined {
+  /**
+   * A convenience function for checking the type of `v` with
+   * {@link Schema.isType} and then, if that succeeds, mapping `v` using this
+   * schema's mapper function via {@link Schema.map}. If `v` is not the correct
+   * type, then `undefined` is returned.
+   *
+   * @example
+   * const schema = string().withMapper(v => v.trim());
+   * schema.isTypeAndMap(' hello '); // 'hello'
+   * schema.isTypeAndMap(123);       // undefined
+   *
+   * @param v
+   */
+  isTypeAndMap(v: unknown): U | undefined {
     if (this.isType(v)) {
-      return this.transform(v);
+      return this.map(v);
     }
   }
 
-  withValidator(fn: (v: T) => boolean): Schema<T, U> {
+  /**
+   * Returns a new schema where the given function is called after
+   * {@link this.isType} to check the validity of a value `v`. The function is
+   * not called if a previous `isType` returns `false`.
+   *
+   * @example
+   * const over5 = number().withIsType(v => v > 5);
+   * over5.isType(3); // false
+   * over5.isType(6); // true
+   *
+   * @example AND logic
+   * const between5and10 = number()
+   *   .withIsType(v => v >= 5)
+   *   .withIsType(v => v <= 10);
+   * over5.isType(3); // false
+   * over5.isType(7); // true
+   *
+   * @param fn
+   */
+  withIsType(fn: (v: T) => boolean): Schema<T, U> {
     const t = this;
     return new (class extends Schema<T, U> {
       isType(v: unknown): v is T {
         return t.isType(v) && fn(v);
       }
 
-      transform(v: T): U {
-        return t.transform(v);
+      map(v: T): U {
+        return t.map(v);
       }
     })();
   }
 
-  withTransform<V>(fn: (v: U) => V): Schema<T, V> {
+  /**
+   * Returns a new schema where the given function is called after
+   * {@link this.map} to map a value `v` to a new value.
+   *
+   * @example
+   * const schema = string().withMapper(v => v.trim());
+   * schema.map(' a  '); // 'a'
+   *
+   * @example Changing types
+   * const schema = string().withMapper(v => Number(v) + 1);
+   * schema.map('3'); // 4
+   *
+   * @param fn
+   *
+   * @see Schema.map
+   */
+  withMapper<V>(fn: (v: U) => V): Schema<T, V> {
     const t = this;
     return new (class extends Schema<T, V> {
       isType(v: unknown): v is T {
         return t.isType(v);
       }
 
-      transform(v: T): V {
-        return fn(t.transform(v));
+      map(v: T): V {
+        return fn(t.map(v));
       }
     })();
   }
 
+  /**
+   * Returns a new schema where values are allowed to be optional, or
+   * `undefined`. Note that if the value is `undefined`, mapping functions that
+   * come before this in the call chain will not receive that undefined value.
+   *
+   * @example
+   * const schema = number().optional();
+   * schema.isType(5);         // true
+   * schema.isType(undefined); // true
+   *
+   * @example
+   * const schema = number().withMapper(v => v + 1).optional();
+   * schema.map(5); // 6
+   * schema.map(undefined); // undefined
+   */
   optional(): Schema<T | undefined, U | undefined> {
     const t = this;
     return new (class extends Schema<T | undefined, U | undefined> {
@@ -58,12 +175,27 @@ export abstract class Schema<T, U = T> {
         return v === undefined || t.isType(v);
       }
 
-      transform(v: T | undefined): U | undefined {
-        return v === undefined ? undefined : t.transform(v);
+      map(v: T | undefined): U | undefined {
+        return v === undefined ? undefined : t.map(v);
       }
     })();
   }
 
+  /**
+   * Returns a new schema where values are allowed to be `null`. Note that if
+   * the value is `null`, mapping functions that come before this in the call
+   * chain will not receive that null value.
+   *
+   * @example
+   * const schema = number().nullable();
+   * schema.isType(5);         // true
+   * schema.isType(null); // true
+   *
+   * @example
+   * const schema = number().withMapper(v => v + 1).nullable();
+   * schema.map(5); // 6
+   * schema.map(null); // null
+   */
   nullable(): Schema<T | null, U | null> {
     const t = this;
     return new (class extends Schema<T | null, U | null> {
@@ -71,12 +203,27 @@ export abstract class Schema<T, U = T> {
         return v === null || t.isType(v);
       }
 
-      transform(v: T | null): U | null {
-        return v === null ? null : t.transform(v);
+      map(v: T | null): U | null {
+        return v === null ? null : t.map(v);
       }
     })();
   }
 
+  /**
+   * Returns a new schema where values are allowed to be this schema type OR
+   * argument `schema`.
+   *
+   * @example
+   * const schema = number().or(string());
+   * schema.isType(5);    // true
+   * schema.isType('a');  // true
+   *
+   * @example Using withMapper
+   * const schema = number().withMapper(v => String(v + 1))
+   *   .or(string().withMapper(v => v.trim()));
+   * schema.map(5);        // '6'
+   * schema.isType('  a'); // 'a'
+   */
   or<S extends Schema<unknown, V>, V>(
     schema: S,
   ): Schema<T | GetTypeFromSchema<S>, U | V> {
@@ -86,8 +233,8 @@ export abstract class Schema<T, U = T> {
         return t.isType(v) || schema.isType(v);
       }
 
-      transform<S>(v: GetTypeFromSchema<S> | T): U | V {
-        return t.isType(v) ? t.transform(v) : schema.transform(v);
+      map<S>(v: GetTypeFromSchema<S> | T): U | V {
+        return t.isType(v) ? t.map(v) : schema.map(v);
       }
     })();
   }
@@ -99,16 +246,36 @@ export type GetTypeFromSchemaRecord<S extends SchemaRecord> = {
   [K in keyof S]: GetTypeFromSchema<S[K]>;
 };
 
-export type GetTransformFromSchemaRecord<S extends SchemaRecord> = {
-  [K in keyof S]: GetTransformFromSchema<S[K]>;
+export type GetTypeFromMappedSchemaRecord<S extends SchemaRecord> = {
+  [K in keyof S]: GetTypeFromMappedSchema<S[K]>;
 };
 
 export abstract class ObjectSchema<S extends SchemaRecord> extends Schema<
   GetTypeFromSchemaRecord<S>,
-  GetTransformFromSchemaRecord<S>
+  GetTypeFromMappedSchemaRecord<S>
 > {
+  /**
+   * Returns a new schema where all values may be `undefined`.
+   *
+   * @example
+   * const schema = object({
+   *   a: number(),
+   *   b: number(),
+   * }).partial();
+   * schema.isType({ a: 1, b: 2 });         // true
+   * schema.isType({ a: undefined, b: 2 }); // true
+   * schema.isType(undefined);              // false
+   *
+   * @example Using withMapper
+   * const schema = object({
+   *   a: number().withMapper(v => v + 1),
+   *   b: number(),
+   * }).partial().withMapper(v => v.a);
+   * schema.map({ a: 1, b: 3 });         // 2
+   * schema.map({ a: undefined, b: 2 }); // undefined
+   */
   abstract partial(): Schema<
     Partial<GetTypeFromSchemaRecord<S>>,
-    Partial<GetTransformFromSchemaRecord<S>>
+    Partial<GetTypeFromMappedSchemaRecord<S>>
   >;
 }

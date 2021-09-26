@@ -6,18 +6,18 @@ describe('object validation', () => {
     str: string(),
     numStr: string({ regExp: /^[0-9]{3}$/ })
       .optional()
-      .withTransform((s) => Number(s)),
+      .withMapper((s) => Number(s)),
     strRegExp: string({ nonempty: true, regExp: /^(abc)?$/ }),
     bool: boolean(),
-    num: number({ min: 3, max: 5 }).withTransform((n) => n - 1),
-    arr: array(
-      number().or(string({ oneOf: ['a', 'b'] as const })),
-    ).withTransform((arr) => arr.filter((v) => number().isType(v))),
+    num: number({ min: 3, max: 5 }).withMapper((n) => n - 1),
+    arr: array(number().or(string({ oneOf: ['a', 'b'] as const }))).withMapper(
+      (arr) => arr.filter((v) => number().isType(v)),
+    ),
     objArr: array(
       object({
         a: string(),
         b: unknown(),
-      }).withTransform((obj) => obj.a),
+      }).withMapper((obj) => obj.a),
     ),
     obj: object({
       x: number(),
@@ -25,7 +25,7 @@ describe('object validation', () => {
     }),
   })
     .nullable()
-    .withTransform((obj) => ({ ...obj, bool: true }));
+    .withMapper((obj) => ({ ...obj, bool: true }));
 
   const complexVal = {
     str: 'a',
@@ -52,14 +52,24 @@ describe('object validation', () => {
       true,
     );
   });
+  it('validates a partial object with map', () => {
+    expect(
+      object({
+        a: string().withMapper((v) => v + 1),
+      })
+        .partial()
+        .withMapper((v) => v.a)
+        .map({ a: undefined }),
+    ).toBe(undefined);
+  });
   it('validates a complex object', () => {
     expect(complex.isType(null)).toBe(true);
     expect(complex.isType(complexVal)).toBe(true);
   });
   it('transforms an object', () => {
-    expect(complex.transform(null)).toEqual({ bool: true });
+    expect(complex.map(null)).toEqual({ bool: true });
     assert(complex.isType(complexVal));
-    expect(complex.transform({ ...complexVal, numStr: '553' })).toEqual({
+    expect(complex.map({ ...complexVal, numStr: '553' })).toEqual({
       ...complexVal,
       numStr: 553,
       num: 3,
@@ -103,12 +113,12 @@ describe('object validation', () => {
     const s = object({ a: boolean() });
     const v = { a: true, b: 3 };
     assert(s.isType(v));
-    expect(s.transform(v)).toEqual({ a: true });
+    expect(s.map(v)).toEqual({ a: true });
   });
   it('can include unknown properties', () => {
     const s = object({ a: boolean() }, { includeUnknowns: true });
     const v = { a: true, b: 3 };
     assert(s.isType(v));
-    expect(s.transform(v)).toEqual({ a: true, b: 3 });
+    expect(s.map(v)).toEqual({ a: true, b: 3 });
   });
 });

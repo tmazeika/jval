@@ -1,4 +1,4 @@
-import { boolean } from '../src';
+import { boolean, number } from '../src';
 
 describe('boolean validation', () => {
   it('validates a boolean', () => {
@@ -8,12 +8,12 @@ describe('boolean validation', () => {
   it('validates a boolean with a custom validator', () => {
     expect(
       boolean()
-        .withValidator((b) => !b)
+        .withIsType((b) => !b)
         .isType(true),
     ).toBe(false);
     expect(
       boolean()
-        .withValidator((b) => !b)
+        .withIsType((b) => !b)
         .isType(false),
     ).toBe(true);
   });
@@ -43,22 +43,22 @@ describe('boolean validation', () => {
     expect(s2.isType(undefined)).toBe(true);
   });
   it('transforms a boolean', () => {
-    const s1 = boolean().withTransform((v) => !v);
-    expect(s1.withTransform((v) => !v).transform(true)).toBe(true);
-    expect(s1.transform(true)).toBe(false);
-    expect(s1.transform(false)).toBe(true);
+    const s1 = boolean().withMapper((v) => !v);
+    expect(s1.withMapper((v) => !v).map(true)).toBe(true);
+    expect(s1.map(true)).toBe(false);
+    expect(s1.map(false)).toBe(true);
     const s2 = boolean()
-      .withTransform(() => 1)
+      .withMapper(() => 1)
       .optional();
-    expect(s2.transform(undefined)).toBe(undefined);
-    expect(s2.transform(false)).toBe(1);
+    expect(s2.map(undefined)).toBe(undefined);
+    expect(s2.map(false)).toBe(1);
     const s3 = boolean()
       .optional()
-      .withTransform(() => undefined);
-    expect(s3.transform(true)).toBe(undefined);
-    expect(s3.transform(undefined)).toBe(undefined);
-    const s4 = boolean().withTransform(() => undefined);
-    expect(s4.transform(true)).toBe(undefined);
+      .withMapper(() => undefined);
+    expect(s3.map(true)).toBe(undefined);
+    expect(s3.map(undefined)).toBe(undefined);
+    const s4 = boolean().withMapper(() => undefined);
+    expect(s4.map(true)).toBe(undefined);
   });
   it('rejects a non-boolean', () => {
     const s = boolean();
@@ -68,5 +68,22 @@ describe('boolean validation', () => {
     expect(s.isType('a')).toBe(false);
     expect(s.isType(null)).toBe(false);
     expect(s.isType(undefined)).toBe(false);
+  });
+  it('works with optional mapping', () => {
+    const s1 = boolean()
+      .optional()
+      .withMapper((v) => (v === undefined ? 3 : v));
+    expect(s1.isType(true)).toBe(true);
+    expect(s1.isType(undefined)).toBe(true);
+    expect(s1.map(true)).toBe(true);
+    expect(s1.map(false)).toBe(false);
+    expect(s1.map(undefined)).toBe(3);
+  });
+  it('works with or mapping', () => {
+    const s = boolean()
+      .withMapper((v) => String(!v))
+      .or(number().withMapper((v) => v + 1));
+    expect(s.map(true)).toBe('false');
+    expect(s.map(3)).toBe(4);
   });
 });

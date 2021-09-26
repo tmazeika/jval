@@ -30,14 +30,18 @@ describe('number validation', () => {
     expect(s2.isType(undefined)).toBe(true);
   });
   it('transforms a number', () => {
-    const s1 = number().withTransform((v) => v + 1);
-    expect(s1.withTransform((v) => v - 1).transform(3)).toBe(3);
-    expect(s1.transform(1)).toBe(2);
+    const s1 = number().withMapper((v) => v + 1);
+    expect(s1.withMapper((v) => v - 1).map(3)).toBe(3);
+    expect(s1.map(1)).toBe(2);
     const s2 = number()
-      .withTransform(() => 5)
+      .withMapper(() => 5)
       .optional();
-    expect(s2.transform(undefined)).toBe(undefined);
-    expect(s2.transform(6)).toBe(5);
+    expect(s2.map(undefined)).toBe(undefined);
+    expect(s2.map(6)).toBe(5);
+    const s3 = number()
+      .withMapper((v) => v + 1)
+      .withMapper((v) => v * 2);
+    expect(s3.map(5)).toBe(12);
   });
   it('rejects a non-number', () => {
     const s = number();
