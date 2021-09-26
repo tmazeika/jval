@@ -1,6 +1,6 @@
 # JVal
 
-JVal is a small data validation and transformation library. It's ideal for
+JVal is a small and extensible data validation and transformation library. It's ideal for
 situations where:
 
 1. Detailed error messages are not needed (for when the UI will try to validate
@@ -25,7 +25,7 @@ situations where:
 - Utility Types
   - Schema
   - GetTypeFromSchema
-  - `GetTypeFromMappedSchema`
+  - GetTypeFromMappedSchema
 
 ## Installation
 
