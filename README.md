@@ -76,8 +76,6 @@ if (userSchema.isType(unknownData)) {
 
 ## Types
 
----
-
 ##### `array`
 
 ```typescript
