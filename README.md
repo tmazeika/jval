@@ -226,7 +226,7 @@ then back into an object with Dates:
 
 ```typescript
 const invoiceSchema = object({
-  dueDate: Date,
+  dueDate: custom(v => v instanceof Date ? v : undefined),
 });
 
 type Invoice = GetTypeFromSchema<typeof invoiceSchema>;
