@@ -22,7 +22,7 @@ describe('temp', () => {
 
     const o3 = number()
       .min(1)
-      .integer()
+      // .integer()
       .thenMap(n => String(n + 1) + ' ')
       .thenMap(s => s.trim())
       .thenValidate(v => v.length == 1);
@@ -30,7 +30,5 @@ describe('temp', () => {
     expect(o3.isValid(0)).toBe(false);
     expect(o3.isValid(8)).toBe(true);
     expect(o3.isValid(9)).toBe(false);
-    expect(o3.validateAndMap(0)).toBe('1');
-    expect(o3.map(1)).toBe('2');
   });
 });
