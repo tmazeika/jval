@@ -9,7 +9,9 @@ export type JsonValue =
   | number
   | boolean
   | JsonValue[]
-  | { [K in string]: JsonValue };
+  | readonly JsonValue[]
+  | { [K in string]: JsonValue }
+  | { readonly [K in string]: JsonValue };
 
 /**
  * Gets whether `v` is a JsonValue.
