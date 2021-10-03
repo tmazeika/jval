@@ -1,94 +1,66 @@
-import { Schema } from '.';
+import { Schema, WithValidator } from './schema';
 
-interface Options {
-  /**
-   * When set, requires that the number be exactly equal to this value. If this
-   * is a constant, the type of the number becomes the constant.
-   *
-   * @example Constant
-   * const mustBe1 = number({ eq: 1 as const });
-   * const data: unknown = 1;
-   * if (mustBe1.isType(data)) {
-   *   const v: 1 = data; // typechecks
-   *   // ...
-   * }
-   */
-  eq?: number;
+export class NumberSchema extends Schema<number> {
+  isType(v: unknown): v is number {
+    return typeof v === 'number';
+  }
 
-  /**
-   * The minimum value of the number, inclusive. By default, there is no
-   * minimum value.
-   */
-  min?: number;
+  isValid(v: number): boolean {
+    return true;
+  }
 
-  /**
-   * The maximum value of the number, inclusive. By default, there is no
-   * maximum value.
-   */
-  max?: number;
-
-  /**
-   * When `true`, requires that the number be a _safe integer_.
-   * @see Number.isSafeInteger
-   */
-  integer?: boolean;
-
-  /**
-   * When unset or `false`, the number is required to be finite. Otherwise, when
-   * set to `true`, positive and negative infinity are allowed. Also note that
-   * very large numbers may turn into infinity.
-   *
-   * @example Large numbers may turn into infinity
-   * const n = Number('9'.repeat(400)); // Infinity
-   * number().isType(n);    // false
-   * number().isType(9999); // true
-   *
-   * @see Number.isFinite
-   */
-  allowInfinite?: boolean;
+  map(v: number): number {
+    return v;
+  }
 }
 
-type NarrowedNumber<O extends Options> = O['eq'] extends number
-  ? O['eq']
-  : number;
-
-/**
- * Creates a value schema for a number.
- *
- * @param options
- */
-export function number<O extends Options>(
-  options: O,
-): Schema<NarrowedNumber<O>>;
-
-/**
- * Creates a value schema for a number.
- *
- * @param options
- */
-export function number(options?: Options): Schema<number>;
-
-/**
- * Creates a value schema for a number.
- *
- * @param options
- */
-export function number(options?: Options): Schema<number> {
-  return new (class extends Schema<number> {
-    isType(v: unknown): v is number {
-      if (typeof v !== 'number' || Number.isNaN(v)) {
-        return false;
+export class InexactNumberSchema extends NumberSchema {
+  min(n: number): InexactNumberSchema {
+    return new (class extends InexactNumberSchema {
+      isValid(v: number): boolean {
+        return v >= n;
       }
-      let ok = options?.eq === undefined || v === options.eq;
-      ok &&= options?.min === undefined || v >= options.min;
-      ok &&= options?.max === undefined || v <= options.max;
-      ok &&= !options?.integer || Number.isSafeInteger(v);
-      ok &&= options?.allowInfinite || Number.isFinite(v);
-      return ok;
-    }
+    });
+  }
 
-    map(v: number): number {
-      return v;
-    }
-  })();
+  max(n: number): InexactNumberSchema {
+    return new (class extends InexactNumberSchema {
+      isValid(v: number): boolean {
+        return v <= n;
+      }
+    });
+  }
+
+  integer(): InexactNumberSchema {
+    return new (WithValidator(InexactNumberSchema, Number.isSafeInteger));
+  }
+
+  unsafeInteger(): InexactNumberSchema {
+    return new (WithValidator(InexactNumberSchema, Number.isInteger));
+  }
+}
+
+export class ExactNumberSchema extends InexactNumberSchema {
+  eq<N extends number>(n: N): Schema<N> {
+    return new (class extends Schema<N> {
+      isType(v: unknown): v is N {
+        return v === n;
+      }
+
+      isValid(v: N): boolean {
+        return v === n;
+      }
+
+      map(v: N): N {
+        return v;
+      }
+    })();
+  }
+}
+
+/**
+ * Creates a value schema for a number.
+ */
+export function number(): ExactNumberSchema {
+  return new ExactNumberSchema();
 }

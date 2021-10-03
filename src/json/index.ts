@@ -8,10 +8,8 @@ export type JsonValue =
   | string
   | number
   | boolean
-  | JsonValue[]
   | readonly JsonValue[]
-  | { [K in string]: JsonValue }
-  | { readonly [K in string]: JsonValue };
+  | { [K in string]: JsonValue };
 
 /**
  * Gets whether `v` is a JsonValue.
