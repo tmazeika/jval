@@ -112,14 +112,14 @@ export abstract class Schema<T, U = T> {
    * @param fn
    */
   withIsType(fn: (v: T) => boolean): Schema<T, U> {
-    const t = this;
+    const { isType, map } = this;
     return new (class extends Schema<T, U> {
       isType(v: unknown): v is T {
-        return t.isType(v) && fn(v);
+        return isType(v) && fn(v);
       }
 
       map(v: T): U {
-        return t.map(v);
+        return map(v);
       }
     })();
   }
@@ -141,14 +141,14 @@ export abstract class Schema<T, U = T> {
    * @see Schema.map
    */
   withMapper<V>(fn: (v: U) => V): Schema<T, V> {
-    const t = this;
+    const { isType, map } = this;
     return new (class extends Schema<T, V> {
       isType(v: unknown): v is T {
-        return t.isType(v);
+        return isType(v);
       }
 
       map(v: T): V {
-        return fn(t.map(v));
+        return fn(map(v));
       }
     })();
   }
@@ -169,14 +169,14 @@ export abstract class Schema<T, U = T> {
    * schema.map(undefined); // undefined
    */
   optional(): Schema<T | undefined, U | undefined> {
-    const t = this;
+    const { isType, map } = this;
     return new (class extends Schema<T | undefined, U | undefined> {
       isType(v: unknown): v is T | undefined {
-        return v === undefined || t.isType(v);
+        return v === undefined || isType(v);
       }
 
       map(v: T | undefined): U | undefined {
-        return v === undefined ? undefined : t.map(v);
+        return v === undefined ? undefined : map(v);
       }
     })();
   }
@@ -197,14 +197,14 @@ export abstract class Schema<T, U = T> {
    * schema.map(null); // null
    */
   nullable(): Schema<T | null, U | null> {
-    const t = this;
+    const { isType, map } = this;
     return new (class extends Schema<T | null, U | null> {
       isType(v: unknown): v is T | null {
-        return v === null || t.isType(v);
+        return v === null || isType(v);
       }
 
       map(v: T | null): U | null {
-        return v === null ? null : t.map(v);
+        return v === null ? null : map(v);
       }
     })();
   }
@@ -227,14 +227,14 @@ export abstract class Schema<T, U = T> {
   or<S extends Schema<unknown, V>, V>(
     schema: S,
   ): Schema<T | GetTypeFromSchema<S>, U | V> {
-    const t = this;
+    const { isType, map } = this;
     return new (class extends Schema<T | GetTypeFromSchema<S>, U | V> {
       isType(v: unknown): v is T | GetTypeFromSchema<S> {
-        return t.isType(v) || schema.isType(v);
+        return isType(v) || schema.isType(v);
       }
 
       map<S>(v: GetTypeFromSchema<S> | T): U | V {
-        return t.isType(v) ? t.map(v) : schema.map(v);
+        return isType(v) ? map(v) : schema.map(v);
       }
     })();
   }

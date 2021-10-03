@@ -24,7 +24,8 @@ export function isJsonValue(v: unknown): v is JsonValue {
     typeof v === 'boolean' ||
     (Array.isArray(v) && v.every(isJsonValue)) ||
     (typeof v === 'object' &&
-      Object.entries(v!).every(
+      v !== null &&
+      Object.entries(v).every(
         ([k, v]) => typeof k === 'string' && isJsonValue(v),
       ))
   );
@@ -59,7 +60,7 @@ export function isJsonValue(v: unknown): v is JsonValue {
  * // json = '{"a":1,"b":{"$type":0,"value":"1970-01-01T00:00:00.000Z"}}'
  * codec.decode(json); // equal to { a: 1, b: new Date(0) }
  */
-export interface TypeCodec<T = any, U extends JsonValue = any> {
+export interface TypeCodec<T, U extends JsonValue> {
   /**
    * The schema for the JSON representation of `T`.
    */
@@ -111,7 +112,7 @@ export interface Codec {
  *   that JavaScript normally doesn't encode or decode via {@link
  *   JSON.stringify} or {@link JSON.parse}, respectively.
  */
-export function createCodec(...types: TypeCodec[]): Codec {
+export function createCodec(...types: TypeCodec<unknown, JsonValue>[]): Codec {
   const schemas = types.map((t, i) =>
     object({
       $type: number({ eq: i }),
@@ -120,7 +121,7 @@ export function createCodec(...types: TypeCodec[]): Codec {
   );
 
   function replace(key: string, value: unknown): unknown {
-    for (const [i, t] of types.entries()) {
+    for (const [i, t] of Array.from(types.entries())) {
       if (t.isType(value)) {
         return {
           $type: i,

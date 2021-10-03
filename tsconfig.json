@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "es6",
     "lib": ["esnext"],
-    "target": "es6",
+    "target": "es5",
+    "moduleResolution": "node",
+    "outDir": "dist",
     "declaration": true,
-    "emitDeclarationOnly": true,
-    "outFile": "dist/index.d.ts",
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
