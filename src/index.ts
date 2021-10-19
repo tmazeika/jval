@@ -9,4 +9,4 @@ export { $string } from './string';
 export { $tuple } from './tuple';
 export { $undefined } from './undefined';
 export { $unknown } from './unknown';
-export * as json from './json';
+export * from './json';
