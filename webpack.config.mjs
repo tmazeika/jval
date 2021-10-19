@@ -22,6 +22,7 @@ export default {
       name: 'jval',
       type: 'umd',
     },
+    globalObject: 'this',
     clean: true,
   },
 };
