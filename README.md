@@ -138,9 +138,9 @@ schema.isType(3.14159);  // true
 Feel free to chain it...
 
 ```ts
-$string().or($number()).or($boolean())
+$string().or($number()).or($boolean());
 // equivalent to:
-$string().or($number().or($boolean()))
+$string().or($number().or($boolean()));
 // (notice the parenthesis)
 ```
 

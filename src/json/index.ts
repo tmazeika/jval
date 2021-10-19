@@ -67,7 +67,7 @@ export interface Codec {
  *
  * @param types Type codecs that add support for encoding and decoding types
  *   that JavaScript normally doesn't encode or decode via {@link
-  *   JSON.stringify} or {@link JSON.parse}.
+ *   JSON.stringify} or {@link JSON.parse}.
  */
 export function createCodec(...types: TypeCodec<unknown, unknown>[]): Codec {
   const schemas = types.map((t, i) =>

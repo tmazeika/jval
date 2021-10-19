@@ -95,7 +95,8 @@ export class ExactArraySchema<
  * $array($string()).isType(['a', 123]); // false
  * $array($string()).isType('hello');    // false
  */
-export function $array<S extends Schema<T, U>,
+export function $array<
+  S extends Schema<T, U>,
   T = GetSchemaType<S>,
   U = GetSchemaMappedType<S>,
 >(schema: S): ExactArraySchema<S, T, U> {
