@@ -8,6 +8,19 @@ type GetTupleSchemaMappedType<S> = {
   [I in keyof S]: GetSchemaMappedType<S[I]>;
 };
 
+/**
+ * Creates an array schema of a fixed length, where each element has its own
+ * schema.
+ * @param schemas The schemas of corresponding elements in order.
+ *
+ * @example
+ * $tuple($string()).isType(['a']);      // true
+ * $tuple($string()).isType(['a', 'b']); // false
+ *
+ * $tuple($string(), $number()).isType(['a', 1]);    // true
+ * $tuple($string(), $number()).isType(['a']);       // false
+ * $tuple($string(), $number()).isType(['a', 1, 2]); // false
+ */
 export function $tuple<S extends Schema<unknown>[]>(
   ...schemas: S
 ): Schema<GetTupleSchemaType<S>, GetTupleSchemaMappedType<S>> {

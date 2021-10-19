@@ -1,4 +1,4 @@
-import { BaseSchema } from './schema';
+import { BaseSchema, Schema } from './schema';
 
 export class UndefinedSchema extends BaseSchema<undefined> {
   override isType(v: unknown): v is undefined {
@@ -6,6 +6,13 @@ export class UndefinedSchema extends BaseSchema<undefined> {
   }
 }
 
-export function $undefined(): UndefinedSchema {
+/**
+ * Creates an `undefined` schema.
+ *
+ * @example
+ * $undefined().isType(undefined); // true
+ * $undefined().isType(0);         // false
+ */
+export function $undefined(): Schema<undefined> {
   return new UndefinedSchema();
 }

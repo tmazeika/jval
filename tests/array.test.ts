@@ -8,7 +8,7 @@ describe('$array', () => {
 
     // bad
     expect($array($number().or($string())).isType([1, [2, 3]])).toBe(false);
-
+    expect($array($string()).isType({ 0: 'a', 1: 'b' })).toBe(false);
     expect($array($unknown()).isType(true)).toBe(false);
     expect($array($unknown()).isType(null)).toBe(false);
     expect($array($unknown()).isType(3)).toBe(false);
@@ -19,6 +19,11 @@ describe('$array', () => {
 
   it('isValid length', () => {
     expect($array($unknown()).length(2).isValid([true, 1])).toBe(true);
+    expect(
+      $array($unknown())
+        .length(2 as number)
+        .isValid([true]),
+    ).toBe(false);
   });
 
   it('isValid minLength', () => {

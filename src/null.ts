@@ -6,6 +6,13 @@ export class NullSchema extends BaseSchema<null> {
   }
 }
 
-export function $null(): NullSchema {
+/**
+ * Creates a `null` schema.
+ *
+ * @example
+ * $null().isType(null); // true
+ * $null().isType(0);    // false
+ */
+export function $null(): BaseSchema<null> {
   return new NullSchema();
 }

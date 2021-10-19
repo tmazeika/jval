@@ -41,6 +41,9 @@ export class AnyArraySchema<S extends Schema<T, U>, T, U> extends ArraySchema<
   T,
   U
 > {
+  /**
+   * Validates that arrays have at least `n` elements.
+   */
   minLength(n: number): AnyArraySchema<S, T, U> {
     return new (class extends AnyArraySchema<S, T, U> {
       override isValid(vs: T[]): boolean {
@@ -49,6 +52,9 @@ export class AnyArraySchema<S extends Schema<T, U>, T, U> extends ArraySchema<
     })(this.schema);
   }
 
+  /**
+   * Validates that arrays to have at most `n` elements.
+   */
   maxLength(n: number): AnyArraySchema<S, T, U> {
     return new (class extends AnyArraySchema<S, T, U> {
       override isValid(vs: T[]): boolean {
@@ -63,17 +69,33 @@ export class ExactArraySchema<
   T,
   U,
 > extends AnyArraySchema<S, T, U> {
+  /**
+   * Validates that arrays have exactly `n` elements.
+   */
   length<N extends number>(n: N): Schema<Tuple<T, N>, Tuple<U, N>> {
     return new (class extends ArraySchema<S, T, U, N> {
       override isType(vs: unknown): vs is Tuple<T, N> {
         return super.isType(vs) && vs.length === n;
       }
+
+      override isValid(vs: Tuple<T, N>): boolean {
+        return super.isValid(vs) && vs.length === n;
+      }
     })(this.schema);
   }
 }
 
-export function $array<
-  S extends Schema<T, U>,
+/**
+ * Creates an array schema.
+ * @param schema The schema of each element.
+ *
+ * @example
+ * $array($string()).isType([]);         // true
+ * $array($string()).isType(['a', 'b']); // true
+ * $array($string()).isType(['a', 123]); // false
+ * $array($string()).isType('hello');    // false
+ */
+export function $array<S extends Schema<T, U>,
   T = GetSchemaType<S>,
   U = GetSchemaMappedType<S>,
 >(schema: S): ExactArraySchema<S, T, U> {

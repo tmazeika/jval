@@ -75,5 +75,20 @@ describe('$number', () => {
         .thenMap((v) => (v ? 2 : 0))
         .map(0),
     ).toBe(0);
+    expect(
+      $number()
+        .thenMap((v) => String(v))
+        .thenMap((v) => v.length)
+        .map(123),
+    ).toBe(3);
+  });
+
+  it('or', () => {
+    expect(
+      $number()
+        .thenMap((v) => v + 1)
+        .or($number().thenMap((v) => v + 2))
+        .map(0),
+    ).toBe(1);
   });
 });

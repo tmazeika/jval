@@ -30,4 +30,8 @@ describe('$boolean', () => {
         .map(true),
     ).toBe(2);
   });
+
+  it('or', () => {
+    expect($boolean().or($boolean()).map(true)).toBe(true);
+  });
 });

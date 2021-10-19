@@ -43,6 +43,21 @@ export class ObjectSchema<S extends SchemaRecord> extends Schema<
 }
 
 export class ExactObjectSchema<S extends SchemaRecord> extends ObjectSchema<S> {
+  /**
+   * Validates that objects strictly match the object schema without excess
+   * properties.
+   *
+   * @example
+   * $object({ a: $number })
+   *   .isType({ a: 1, b: 2 }); // true
+   *
+   * $object({ a: $number })
+   *   .strict()
+   *   .isType({ a: 1, b: 2 }); // false
+   *
+   * $object({ 0: $number() }).isType([1]);          // true
+   * $object({ 0: $number() }).strict().isType([1]); // false
+   */
   strict(): Schema<GetSchemaRecordType<S>, GetSchemaRecordMappedType<S>> {
     return new (class extends ObjectSchema<S> {
       override isType(vs: unknown): vs is GetSchemaRecordType<S> {
@@ -64,6 +79,20 @@ export function $object<S extends SchemaRecord>(
   schema: S,
 ): ExactObjectSchema<S>;
 
+/**
+ * Creates an object schema.
+ * @param schema A record of keys to their schemas.
+ *
+ * @example Simple object
+ * $object({ a: $string(), b: $number() })
+ *   .isType({ a: '123', b: 456 }); // true
+ *
+ * $object({ a: $string() })
+ *   .isType({ a: '123', b: 456 }); // true
+ *
+ * $object({ a: $string() })
+ *   .isType({ b: 456 });           // false
+ */
 export function $object<S extends SchemaRecord>(
   schema: S,
 ): ExactObjectSchema<S> {
