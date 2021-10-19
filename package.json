@@ -1,6 +1,6 @@
 {
   "name": "jval",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Simple and extensible JavaScript value validator and transformer.",
   "author": "TJ Mazeika <mazeika.tj@gmail.com>",
   "license": "MIT",
