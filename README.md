@@ -1,318 +1,220 @@
-# JVal
+A small, simple, and extensible data validation library. Also supports custom
+JSON types. It's ideal for situations where:
 
-JVal is a small and extensible data validation and transformation library. It's ideal for
-situations where:
-
-1. Detailed error messages are not needed (for when the UI will try to validate
-   input before submission); and
-2. The client and server share the same codebase and models (like for many Node
-   projects)
-
-## Table of Contents
-
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- Schema Types
-  - [array](#array)
-  - [boolean](#boolean)
-  - [custom](#custom)
-  - number
-  - object
-  - string
-  - unknown
-- [JSON](#json)
-- [withMapper](#withmapper)
-- Utility Types
-  - Schema
-  - GetTypeFromSchema
-  - GetTypeFromMappedSchema
-
-## Installation
-
-```shell
-# npm
-npm i -S jval
-
-# yarn
-yarn add jval
-```
-
-## Quick Start
-
-```typescript
-import { GetTypeFromSchema, number, object, string } from 'jval';
-
-// define a schema
-const userSchema = object({
-  name: string(),
-  age: number({ min: 20 }).nullable(),
-});
-
-// create a type that the schema represents
-type User = GetTypeFromSchema<typeof userSchema>;
-
-// we can now create users based on the schema
-const user1: User = { name: 'John', age: 44 };
-const user2: User = { name: 'Jane', age: null };
-userSchema.isType(user1); // true
-userSchema.isType(user2); // true
-
-// we can also validate values of any type
-const badUser1: unknown = { name: 'Alice', age: '30' };
-const badUser2: unknown = { name: 'Bob', age: 19 };
-userSchema.isType(badUser1); // false
-userSchema.isType(badUser2); // false
-userSchema.isType(1); // false
-
-// `isType` is actually a type guard:
-const unknownData: unknown = { name: 'Eve', age: 25 };
-if (userSchema.isType(unknownData)) {
-  // this typechecks!
-  const name: string = unknownData.name;
-  const age: number | null = unknownData.age;
-  // ...
-}
-```
-
-## Types
-
-##### `array`
-
-```typescript
-// (number | string)[]
-const schema1 = array(number().or(string()));
-
-// string[] of length === 3
-const schema2 = array(string(), {
-  length: 3,
-});
-
-schema2.isType(['a', 'b', 'c']); // true
-schema2.isType(['x', 'y']); // false
-schema2.isType([1, 2, 3]); // false
-
-// [string, string]
-const schema3 = array(string(), {
-  length: 2 as const,
-});
-
-// string[] of length >= 5 and <= 10
-const schema4 = array(string(), {
-  minLength: 5,
-  maxLength: 10,
-});
-```
+- Detailed error messages are not needed; and
+- The client and server share the same code
 
 ---
 
-##### `boolean`
-
-```typescript
-// boolean
-const schema = boolean();
-
-schema.isType(true); // true
-schema.isType(false); // true
-schema.isType(0); // false
+```bash
+npm install jval # or yarn add jval
 ```
 
----
+## First, define a schema
 
-##### `custom`
+Your model is defined in terms of a schema, possibly with validation!
 
-The `custom` schema type is best used for supporting built-in and user-defined
-types (e.g. Map, Set, Date, etc.).
+```ts
+import { $number, $object, $string, GetSchemaType } from 'jval';
 
-```typescript
-const mapSchema = custom((v) => (v instanceof Map ? v : undefined));
-
-mapSchema.isType(
-  new Map([
-    ['a', 1],
-    ['b', 2],
-  ]),
-); // true
-mapSchema.isType({ a: 1, b: 2 }); // false
-
-const setSchema = custom((v) => (v instanceof Set ? v : undefined));
-
-setSchema.isType(new Set([1, 2, 2, 3])); // true
-setSchema.isType([1, 2, 3]); // false
-```
-
-## JSON
-
-Applications often define multiple "shapes" of data for the same logical model.
-For example, an `Invoice` type might have an `amount` field of type `Fraction`,
-but that type might not be able to be sent over the wire as JSON:
-
-```typescript
-interface Invoice {
-  id: string;
-  amountDue: Fraction;
-}
-
-const inv1: Invoice = {
-  id: '1',
-  amountDue: new Fraction(5500, 100),
-};
-
-const data = JSON.stringify(inv1);
-// { "id": 1 }
-// oops, we lost `amountDue`
-```
-
-One solution might be to define another type, `JSONInvoice`, and convert between
-the two as needed:
-
-```typescript
-interface JSONInvoice {
-  id: string;
-  amountDueNum: number;
-  amountDueDenom: number;
-}
-
-const inv2: Invoice = {
-  id: '2',
-  amountDue: new Fraction(7000, 100),
-};
-const converted: JSONInvoice = {
-  id: inv2.id,
-  amountDueNum: inv2.amountDue.n,
-  amountDueDenom: inv2.amountDue.d,
-};
-
-const data = JSON.stringify(converted);
-// { "id": 2, "amountDueNum": 7000, "amountDueDenom": 100 }
-```
-
-Now we would also have to implement logic to convert a `JSONInvoice` back into
-an `Invoice`. You'll notice that if we want to use this method for lots of
-models, we have to write a lot of conversion logic. In addition, we end up with
-two different types for the same model (`Invoice` and `JSONInvoice`).
-
-Another way is to write a custom
-JSON [replacer](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify#the_replacer_parameter)
-and [reviver](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse#using_the_reviver_parameter)
-. A naive replacer function can give us something like this:
-
-```typescript
-const json = JSON.stringify(new Fraction(1000, 100), naiveReplacer);
-// json = '"1000/100"'
-const parsed = JSON.parse(json);
-// '1000/100'
-// not a Fraction anymore
-```
-
-More advanced replacer and reviver functions can give us something even better:
-
-```typescript
-const json = JSON.stringify(new Fraction(1000, 100), advancedReplacer);
-// json = '{"$type":0,"value":"1000/100"}'
-const parsed = JSON.parse(json, advancedReviver);
-// equal to `new Fraction(1000, 100)`
-// we have a Fraction now!
-```
-
-One problem with this is that any type that has a `toJSON` function (one example
-is `Date`) will get converted to a JSON representation _before_ getting replaced
-by the replacer function, so the type information will once again be lost.
-
-JVal has a solution that combines the Schema world with the notion of a JSON
-codec that knows how to encode and decode any type you define an encoder and
-decoder for. This also eliminates the need for an alternative JSON type for each
-model. Here's an example that can encode an object with Dates into JSON, and
-then back into an object with Dates:
-
-```typescript
-const invoiceSchema = object({
-  dueDate: custom((v) => (v instanceof Date ? v : undefined)),
+const userSchema = $object({
+  name: $string().minLength(3),
+  age: $number().int().min(20),
 });
 
-type Invoice = GetTypeFromSchema<typeof invoiceSchema>;
+type User = GetSchemaType<typeof userSchema>;
+```
 
-const inv1: Invoice = {
-  dueDate: new Date(0),
-};
+## Then, validate some values
 
-const dateCodec: TypeCodec<Date, string> = {
-  jsonSchema: string().withMapper((v) => new Date(v)),
-  isType: (v: unknown): v is Date => v instanceof Date,
-  toJson: (v: Date): string => v.toISOString(),
-};
-const codec = createCodec(dateCodec);
+We can call `schema.isType(v)` to check that a value is the same "shape" as the
+schema. Then, `schema.isValid(v)` checks that the value passes validation checks
+such as `age >= 20`.
 
-const encoded: string = codec.encode(inv1);
-// encoded = '{"dueDate":{"$type":0,"value":"1970-01-01T00:00:00.000Z"}}'
-const decoded: unknown = codec.decode(encoded);
-// decoded = inv1
-if (invoiceSchema.isType(decoded)) {
-  // we now have a valid Invoice
+```ts
+const v: unknown = { name: 'Val', age: 30 };
+
+if (userSchema.isType(v) && userSchema.isValid(v)) {
+  // these type-check!
+  const user: User = v;
+  const name: string = user.name;
+  const age: number = user.age;
+} else {
+  // `v` is still unknown :(
 }
 ```
 
-Notice how we could easily send the `encoded` string over the wire to a server,
-where the server would use the same codec to decode the JSON into a
-valid `Invoice`. In fact, here's a middleware function
-for [Next.js](https://nextjs.org/) that does just that:
+# Recipes
 
-```typescript
-function withSchemaBody<R, T, U>(
-  schema: Schema<T, U>,
-  next: (body: U) => NextApiHandler<R>,
-): NextApiHandler<R> {
-  return async (req, res) => {
-    const body: unknown = req.body;
-    if (schema.isType(body)) {
-      return next(schema.transform(body))(req, res);
-    }
-    res.status(400).end();
-  };
+## Custom validation
+
+We can add validation of our own:
+
+```ts
+const nonemptyString = $string().thenValidate((v) => v.trim().length > 0);
+
+nonemptyString.isValid('Hello, jval!'); // true
+nonemptyString.isValid('    ');         // false
+```
+
+## Custom types
+
+We can also add any types of our own with a `$custom` schema:
+
+```ts
+const date = $custom((v): v is Date => v instanceof Date);
+
+date.isType(new Date()); // true
+```
+
+## Narrowed types
+
+Some types can be narrowed during the `isType` check. For example, if your model
+has a string union like:
+
+```ts
+type Currency = 'usd' | 'eur';
+```
+
+Then a normal string can be type-checked to be a Currency:
+
+```ts
+const schema = $string().eq('usd', 'eur');
+
+const v: unknown = 'usd';
+
+if (schema.isType(v)) {
+  // type-checks!
+  const currency: Currency = v;
 }
-
-// usage as a handler
-export default withSchemaBody(invoiceSchema, (body) => async (req, res) => {
-  // `body` is of type `Invoice`, completely validated
-});
 ```
 
-You can pretty easily build up a library of type codecs that can encode and
-decode any built-in, user-defined, or library-defined type to and from JSON.
-Currently, JVal does not provide any predefined codecs, they must be
-hand-written.
+This works for some other schema types as well.
 
-## `withMapper`
-
-When you create a schema, there may be certain transformations that you'd like
-to apply to a value after it's been confirmed to be of the correct type. For
-example, one use case is when you write a custom `trimmedString` schema:
-
-```typescript
-const trimmedString = string().withMapper((v) => v.trim());
-
-trimmedString.map('   world '); // 'world'
+```ts
+$array($string()).length(2);  // type: [string, string]
+$boolean().eq(true);          // type: true
+$number().eq(1, 2);           // type: 1 | 2
+$string().eq('a', 'b');       // type: 'a' | 'b'
+$tuple($number(), $string()); // type: [number, string]
 ```
 
-You can even map to a different type:
+More on that `$tuple` schema type...
 
-```typescript
-const stringyNumber = number().withMapper((v) => String(v + 1));
+## Tuples
 
-stringyNumber.map(5); // '6'
+The array schema type is for variable or fixed-size arrays where all elements
+are the same (maybe mixed) type. In contrast, tuples define a schema for each
+element of a fixed-size array.
+
+```ts
+// This schema defines a tuple of size 0.
+$tuple(); // type: []
+
+// A tuple of size 1, where the sole element is a string.
+$tuple($string()); // type: [string]
+
+// A 2-tuple of a (string, number) pair.
+$tuple($string(), $number()); // type: [string, number]
+
+// Notice that $array can only take _one_ schema:
+$array($boolean()); // type: boolean[]
+
+// ...but it can be turned into a tuple by fixing the length:
+$array($boolean()).length(3); // type: [boolean, boolean, boolean]
 ```
 
-Using the `GetTypeFromMappedSchema` utility type, you can actually create your
-models based on the return type of all mapped values. For example:
+## Mixed types (unions)
 
-```typescript
-const userSchema = object({
-  name: string(),
-  age: string().withMapper((v) => Number(v)),
-});
+All schemas have an `or` function to turn a schema into an either-or schema.
 
-type User = GetTypeFromMappedSchema<typeof userSchema>;
-// User = { name: string, age: number }
+```ts
+const schema = $string().or($number());
+
+schema.isType('Howdy!'); // true
+schema.isType(3.14159);  // true
 ```
 
-This is useful on the server where you may want to transform form inputs into a
-standardized format (i.e. trimmed strings).
+Feel free to chain it...
+
+```ts
+$string().or($number()).or($boolean())
+// equivalent to:
+$string().or($number().or($boolean()))
+// (notice the parenthesis)
+```
+
+## Extra JSON types
+
+Oftentimes when sending data over the wire, we have to convert our models to
+JSON. Unfortunately, this usually looses type information. This is fine for
+public APIs, but for internal client-server communication in a framework like
+Next.js, it'd be nice to retain our types.
+
+We do this by creating a custom JSON codec. It still uses `JSON.parse`
+and `JSON.stringify` under the hood, but there's some hidden plumbing that
+encodes and decodes types how we'd like.
+
+```ts
+import { createCodec, mapCodec } from 'jval';
+
+const myMap = new Map([[1, 2]]);
+JSON.stringify(myMap);
+// '{}' - no good!
+
+// Let's configure a custom JSON codec:
+const codec = createCodec(mapCodec);
+
+// Now let's try encoding our map to JSON, and then decoding that JSON back into
+// a map.
+const encoded = codec.encode(myMap);
+// '{"$type":0,"value":[[1, 2]]}' - woo!
+const decoded = codec.decode(encoded);
+// Map([[1, 2]]) - exactly the same type that we encoded
+```
+
+Also, encoding and decoding is recursive, so go ahead and try encoding a Date
+inside a Set inside a Map.
+
+### Built-in codecs
+
+There are several built-in codecs to make your life easier:
+
+- `dateCodec` &ndash; Date &harr; ISO 8601 string
+- `mapCodec` &ndash; ES6 Map &harr; array of KV tuples
+- `setCodec` &ndash; ES6 Set &harr; array of values
+
+### Custom JSON types
+
+If you want to support your own types, then you'll have to create your own
+codecs. But don't worry! It's pretty easy. Let's try supporting
+a [Fraction.js](https://github.com/infusion/Fraction.js/) type:
+
+```ts
+import { $string, TypeCodec } from 'jval';
+import Fraction from 'fraction.js';
+
+const fractionCodec: TypeCodec<Fraction, string> = {
+  schema: $string().thenMap((v) => new Fraction(v)),
+  isType: (v): v is Fraction => v instanceof Fraction,
+  unwrap: (v) => v.toFraction(),
+};
+
+const codec = createCodec(fractionCodec);
+
+const myFrac = new Fraction(1, 3); // 1/3
+
+const encoded = codec.encode(myFrac);
+// '{"$type":0,"value":"1/3"}'
+const decoded = codec.decode(encoded);
+// Fraction(1, 3)
+```
+
+- The `schema` property defines what the JSON value looks like (a Fraction is
+  encoded as a string, so we use `$string()` here). We use `thenMap` to convert
+  strings back into Fractions.
+- `isType` is used during encoding to see if a value is of the type that this
+  codec is interested in handling.
+- `unwrap` converts our custom type into a type that can be represented in JSON.
+  If you return something like a Map instead of a standard JSON value, and you
+  have a codec registered for that type, then it will be recursively unwrapped.

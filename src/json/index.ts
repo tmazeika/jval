@@ -1,52 +1,13 @@
 import { $number, $object, Schema } from '../index';
 
-/**
- * Represents a serializable JSON value.
- */
-export type JsonValue =
-  | null
-  | string
-  | number
-  | boolean
-  | readonly JsonValue[]
-  | { readonly [K in string]: JsonValue };
-
-/**
- * Gets whether `v` is a serializable JSON value.
- */
-export function isJsonValue(v: unknown): v is JsonValue {
-  return (
-    v === null ||
-    typeof v === 'string' ||
-    typeof v === 'number' ||
-    typeof v === 'boolean' ||
-    (Array.isArray(v) && v.every(isJsonValue)) ||
-    (typeof v === 'object' &&
-      v !== null &&
-      Object.entries(v).every(
-        ([k, v]) => typeof k === 'string' && isJsonValue(v),
-      ))
-  );
-}
+export { dateCodec } from './dateCodec';
+export { mapCodec } from './mapCodec';
+export { setCodec } from './setCodec';
 
 /**
  * A codec for a type to enable it to be encoded into and decoded from JSON.
- *
- * @example Adding support for Date
- * const dateCodec: TypeCodec<Date, string> = {
- *   jsonSchema: $string().thenMap(v => new Date(v)),
- *   isType: (v: unknown): v is Date => v instanceof Date,
- *   toJson: (v: Date): string => v.toISOString(),
- * }
- * const codec = createCodec(dateCodec);
- * const foo = { a: 1, b: new Date(0) };
- * const encoded = codec.encode(foo);
- * expect(encoded)
- *   .toBe('{"a":1,"b":{"$type":0,"value":"1970-01-01T00:00:00.000Z"}}');
- * const decoded = codec.decode(encoded);
- * expect(decoded).toEqual(foo);
  */
-export interface TypeCodec<T, U extends JsonValue> {
+export interface TypeCodec<T, U> {
   /**
    * The schema for the JSON representation of `T`. Must map to `U` (i.e. with
    * `thenMap`).
@@ -54,7 +15,7 @@ export interface TypeCodec<T, U extends JsonValue> {
    * @example For `<T=Date, U=string>`
    * $string().thenMap(v => new Date(v))
    */
-  jsonSchema: Schema<U, T>;
+  schema: Schema<U, T>;
 
   /**
    * Checks whether `v` has a type of `T`. You may choose to validate `v` as
@@ -69,12 +30,15 @@ export interface TypeCodec<T, U extends JsonValue> {
   isType(v: unknown): v is T;
 
   /**
-   * Converts `v` to the JSON representation of `T`.
+   * Converts `v` to the JSON representation of `T`. If the return value is not
+   * a standard JSON value (e.g. an ES6 Map or any other custom type), and there
+   * is a type codec registered for that type, then it will be recursively
+   * unwrapped.
    *
    * @example For `<T=Date, U=string>`
    * (v: Date): string => v.toISOString()
    */
-  toJson(v: T): U;
+  unwrap(v: T): U;
 }
 
 /**
@@ -83,10 +47,11 @@ export interface TypeCodec<T, U extends JsonValue> {
  */
 export interface Codec {
   /**
-   * Encodes `v` as a JSON string. Ignores the `toJSON` function on any objects,
-   * unlike the standard {@link JSON.stringify} function. If a type cannot be
-   * encoded because there is no codec defined for that type, then the resulting
-   * encoded value is unknown (no error is thrown).
+   * Encodes `v` as a JSON string. Ignores the `toJSON` function on any objects
+   * for which there is a type codec registered, unlike the standard
+   * {@link JSON.stringify} function. If a type cannot be encoded because there
+   * is no type codec defined for that type, then the resulting encoded value is
+   * encoded like {@link JSON.stringify} would encode it (no error is thrown).
    */
   encode(v: unknown): string;
 
@@ -104,11 +69,11 @@ export interface Codec {
  *   that JavaScript normally doesn't encode or decode via {@link
   *   JSON.stringify} or {@link JSON.parse}.
  */
-export function createCodec(...types: TypeCodec<unknown, JsonValue>[]): Codec {
+export function createCodec(...types: TypeCodec<unknown, unknown>[]): Codec {
   const schemas = types.map((t, i) =>
     $object({
       $type: $number().eq(i),
-      value: t.jsonSchema,
+      value: t.schema,
     }).thenMap((v) => v.value),
   );
 
@@ -118,7 +83,7 @@ export function createCodec(...types: TypeCodec<unknown, JsonValue>[]): Codec {
       if (t.isType(value)) {
         return {
           $type: i,
-          value: t.toJson(value),
+          value: replace(key, t.unwrap(value)),
         };
       }
     }
@@ -128,7 +93,7 @@ export function createCodec(...types: TypeCodec<unknown, JsonValue>[]): Codec {
   function revive(key: string, value: unknown): unknown {
     for (const s of schemas) {
       if (s.isType(value) && s.isValid(value)) {
-        return s.map(value);
+        return revive(key, s.map(value));
       }
     }
     return value;
