@@ -1,7 +1,7 @@
-import { number, object, Schema } from '../index';
+import { $number, $object, Schema } from '../index';
 
 /**
- * Represents a JSON serializable value.
+ * Represents a serializable JSON value.
  */
 export type JsonValue =
   | null
@@ -9,13 +9,8 @@ export type JsonValue =
   | number
   | boolean
   | readonly JsonValue[]
-  | { [K in string]: JsonValue };
+  | { readonly [K in string]: JsonValue };
 
-/**
- * Gets whether `v` is a JsonValue.
- *
- * @param v
- */
 export function isJsonValue(v: unknown): v is JsonValue {
   return (
     v === null ||
@@ -114,14 +109,15 @@ export interface Codec {
  */
 export function createCodec(...types: TypeCodec<unknown, JsonValue>[]): Codec {
   const schemas = types.map((t, i) =>
-    object({
-      $type: number({ eq: i }),
+    $object({
+      $type: $number().eq(i),
       value: t.jsonSchema,
-    }).withMapper((v) => v.value),
+    }).thenMap((v) => v.value),
   );
 
   function replace(key: string, value: unknown): unknown {
-    for (const [i, t] of Array.from(types.entries())) {
+    for (let i = 0; i < types.length; i++) {
+      const t = types[i];
       if (t.isType(value)) {
         return {
           $type: i,
@@ -134,7 +130,7 @@ export function createCodec(...types: TypeCodec<unknown, JsonValue>[]): Codec {
 
   function revive(key: string, value: unknown): unknown {
     for (const s of schemas) {
-      if (s.isType(value)) {
+      if (s.isType(value) && s.isValid(value)) {
         return s.map(value);
       }
     }

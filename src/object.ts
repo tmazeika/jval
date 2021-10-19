@@ -1,84 +1,71 @@
-import {
-  GetTypeFromMappedSchemaRecord,
-  GetTypeFromSchemaRecord,
-  ObjectSchema,
-  Schema,
-  SchemaRecord,
-} from '.';
+import { GetSchemaMappedType, GetSchemaType, Schema } from './schema';
 
-interface Options {
-  /**
-   * When an object is passed to this schema's `map` function, properties in
-   * that object that are not defined in the schema are normally stripped away.
-   * Set this to `true` to turn off that behavior.
-   */
-  includeUnknowns?: boolean;
+export type SchemaRecord = Record<PropertyKey, Schema<unknown>>;
+
+export type GetSchemaRecordType<S extends SchemaRecord> = {
+  [K in keyof S]: GetSchemaType<S[K]>;
+};
+
+export type GetSchemaRecordMappedType<S extends SchemaRecord> = {
+  [K in keyof S]: GetSchemaMappedType<S[K]>;
+};
+
+export class ObjectSchema<S extends SchemaRecord> extends Schema<
+  GetSchemaRecordType<S>,
+  GetSchemaRecordMappedType<S>
+> {
+  protected readonly schema: S;
+
+  constructor(schema: S) {
+    super();
+    this.schema = schema;
+  }
+
+  override isType(vs: unknown): vs is GetSchemaRecordType<S> {
+    return (
+      typeof vs === 'object' &&
+      vs !== null &&
+      Object.entries(this.schema).every(([k, v]) =>
+        v.isType((vs as Record<PropertyKey, unknown>)[k]),
+      )
+    );
+  }
+
+  override isValid(vs: GetSchemaRecordType<S>): boolean {
+    return Object.entries(this.schema).every(([k, v]) => v.isValid(vs[k]));
+  }
+
+  override map(vs: GetSchemaRecordType<S>): GetSchemaRecordMappedType<S> {
+    return Object.fromEntries(
+      Object.entries(this.schema).map(([k, v]) => [k, v.map(vs[k])]),
+    ) as GetSchemaRecordMappedType<S>;
+  }
 }
 
-/**
- * Creates a value schema for an object.
- *
- * @param schema The schema for each of an object's properties.
- * @param options
- */
-export function object<S extends SchemaRecord>(
-  schema: S,
-  options?: Options,
-): ObjectSchema<S> {
-  return new (class extends ObjectSchema<S> {
-    isType(v: unknown): v is GetTypeFromSchemaRecord<S> {
-      if (typeof v !== 'object' || v === null) {
-        return false;
+export class ExactObjectSchema<S extends SchemaRecord> extends ObjectSchema<S> {
+  strict(): Schema<GetSchemaRecordType<S>, GetSchemaRecordMappedType<S>> {
+    return new (class extends ObjectSchema<S> {
+      override isType(vs: unknown): vs is GetSchemaRecordType<S> {
+        return (
+          super.isType(vs) &&
+          !Array.isArray(vs) &&
+          Object.keys(vs).length === Object.keys(this.schema).length
+        );
       }
-      return Object.entries(schema).every(([k, s]) =>
-        s.isType(v[k as keyof typeof v]),
-      );
-    }
+    })(this.schema);
+  }
+}
 
-    map(v: GetTypeFromSchemaRecord<S>): GetTypeFromMappedSchemaRecord<S> {
-      const transformed = Object.fromEntries(
-        Object.entries(schema).map(([k, s]) => [
-          k,
-          s.map(v[k as keyof typeof v]),
-        ]),
-      );
-      return (
-        options?.includeUnknowns ? { ...v, ...transformed } : transformed
-      ) as GetTypeFromMappedSchemaRecord<S>;
-    }
+type EmptyObject = Record<PropertyKey, never>;
 
-    partial(): Schema<
-      Partial<GetTypeFromSchemaRecord<S>>,
-      Partial<GetTypeFromMappedSchemaRecord<S>>
-    > {
-      return new (class extends Schema<
-        Partial<GetTypeFromSchemaRecord<S>>,
-        Partial<GetTypeFromMappedSchemaRecord<S>>
-      > {
-        isType(v: unknown): v is Partial<GetTypeFromSchemaRecord<S>> {
-          if (typeof v !== 'object' || v === null) {
-            return false;
-          }
-          return Object.entries(schema).every(([k, s]) => {
-            const vk = v[k as keyof typeof v];
-            return vk === undefined ? true : s.isType(vk);
-          });
-        }
+export function $object(schema: EmptyObject): ExactObjectSchema<EmptyObject>;
 
-        map(
-          v: Partial<GetTypeFromSchemaRecord<S>>,
-        ): Partial<GetTypeFromMappedSchemaRecord<S>> {
-          const transformed = Object.fromEntries(
-            Object.entries(schema).map(([k, s]) => {
-              const vk = v[k as keyof typeof v];
-              return [k, vk === undefined ? undefined : s.map(vk)];
-            }),
-          );
-          return (
-            options?.includeUnknowns ? { ...v, ...transformed } : transformed
-          ) as Partial<GetTypeFromMappedSchemaRecord<S>>;
-        }
-      })();
-    }
-  })();
+export function $object<S extends SchemaRecord>(
+  schema: S,
+): ExactObjectSchema<S>;
+
+export function $object<S extends SchemaRecord>(
+  schema: S,
+): ExactObjectSchema<S> {
+  return new ExactObjectSchema<S>(schema);
 }

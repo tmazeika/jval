@@ -1,97 +1,81 @@
-import { GetTypeFromMappedSchema, GetTypeFromSchema, Schema } from '.';
+import { GetSchemaMappedType, GetSchemaType, Schema } from './schema';
 
-// type Tuple<T, N extends number> = N extends N
-//   ? number extends N
-//     ? T[]
-//     : _TupleOf<T, N, []>
-//   : never;
-//
-// type _TupleOf<T, N extends number, R extends unknown[]> = R['length'] extends N
-//   ? R
-//   : _TupleOf<T, N, [T, ...R]>;
-//
-// interface Options {
-//   /**
-//    * When set, requires that the array be exactly this length. If this is a
-//    * constant, the type of the array becomes an n-tuple.
-//    *
-//    * @example Tuple
-//    * const xy = array({ length: 2 as const });
-//    * const arr: unknown = [1, 2];
-//    * if (xy.isType(arr)) {
-//    *   const posn: [number, number] = arr; // typechecks
-//    *   // ...
-//    * }
-//    */
-//   length?: number;
-//
-//   /**
-//    * The minimum length of the array. By default, this is effectively 0.
-//    */
-//   minLength?: number;
-//
-//   /**
-//    * The maximum length of the array. By default, there is no maximum length.
-//    */
-//   maxLength?: number;
-// }
-//
-// type NarrowedArray<O extends Options, T> = O['length'] extends number
-//   ? Tuple<T, O['length']>
-//   : T[];
+export type Tuple<T, N extends number> = N extends N
+  ? number extends N
+    ? T[]
+    : _TupleOf<T, N, []>
+  : never;
 
-/**
- * A value schema for an array.
- *
- * @param schema The schema for each of an array's elements.
- * @param options
- */
-// export function array<S extends Schema<unknown>, O extends Options>(
-//   schema: S,
-//   options: O,
-// ): Schema<
-//   NarrowedArray<O, GetTypeFromSchema<S>>,
-//   NarrowedArray<O, GetTypeFromMappedSchema<S>>
-// >;
+type _TupleOf<T, N extends number, R extends unknown[]> = R['length'] extends N
+  ? R
+  : _TupleOf<T, N, [T, ...R]>;
 
-/**
- * A value schema for an array.
- *
- * @param schema The schema for each of an array's elements.
- * @param options
- */
-// export function array<S extends Schema<unknown>>(
-//   schema: S,
-//   options?: Options,
-// ): Schema<GetTypeFromSchema<S>[], GetTypeFromMappedSchema<S>[]>;
+export class ArraySchema<
+  S extends Schema<T, U>,
+  T,
+  U,
+  N extends number = number,
+> extends Schema<Tuple<T, N>, Tuple<U, N>> {
+  protected readonly schema: S;
 
-/**
- * A value schema for an array.
- *
- * @param schema The schema for each of an array's elements.
- * @param options
- */
-// export function array<S extends Schema<unknown, U>, U>(
-//   schema: S,
-//   options?: Options,
-// ): Schema<GetTypeFromSchema<S>[], GetTypeFromMappedSchema<S>[]> {
-  // return new (class extends Schema<
-  //   GetTypeFromSchema<S>[],
-  //   GetTypeFromMappedSchema<S>[]
-  // > {
-  //   isType(v: unknown): v is GetTypeFromSchema<S>[] {
-  //     if (!Array.isArray(v)) {
-  //       return false;
-  //     }
-  //     let ok = options?.length === undefined || v.length === options.length;
-  //     ok &&= options?.minLength === undefined || v.length >= options.minLength;
-  //     ok &&= options?.maxLength === undefined || v.length <= options.maxLength;
-  //     ok &&= v.every((v) => schema.isType(v));
-  //     return ok;
-  //   }
-  //
-  //   map(v: GetTypeFromSchema<S>[]): GetTypeFromMappedSchema<S>[] {
-  //     return v.map((v) => schema.map(v)) as GetTypeFromMappedSchema<S>[];
-  //   }
-  // })();
-// }
+  constructor(schema: S) {
+    super();
+    this.schema = schema;
+  }
+
+  override isType(vs: unknown): vs is Tuple<T, N> {
+    return Array.isArray(vs) && vs.every((v) => this.schema.isType(v));
+  }
+
+  override isValid(vs: Tuple<T, N>): boolean {
+    return vs.every((v) => this.schema.isValid(v));
+  }
+
+  override map(vs: Tuple<T, N>): Tuple<U, N> {
+    return vs.map((v) => this.schema.map(v)) as Tuple<U, N>;
+  }
+}
+
+export class AnyArraySchema<S extends Schema<T, U>, T, U> extends ArraySchema<
+  S,
+  T,
+  U
+> {
+  minLength(n: number): AnyArraySchema<S, T, U> {
+    return new (class extends AnyArraySchema<S, T, U> {
+      override isValid(vs: T[]): boolean {
+        return super.isValid(vs) && super.map(vs).length >= n;
+      }
+    })(this.schema);
+  }
+
+  maxLength(n: number): AnyArraySchema<S, T, U> {
+    return new (class extends AnyArraySchema<S, T, U> {
+      override isValid(vs: T[]): boolean {
+        return super.isValid(vs) && super.map(vs).length <= n;
+      }
+    })(this.schema);
+  }
+}
+
+export class ExactArraySchema<
+  S extends Schema<T, U>,
+  T,
+  U,
+> extends AnyArraySchema<S, T, U> {
+  length<N extends number>(n: N): Schema<Tuple<T, N>, Tuple<U, N>> {
+    return new (class extends ArraySchema<S, T, U, N> {
+      override isType(vs: unknown): vs is Tuple<T, N> {
+        return super.isType(vs) && vs.length === n;
+      }
+    })(this.schema);
+  }
+}
+
+export function $array<
+  S extends Schema<T, U>,
+  T = GetSchemaType<S>,
+  U = GetSchemaMappedType<S>,
+>(schema: S): ExactArraySchema<S, T, U> {
+  return new ExactArraySchema<S, T, U>(schema);
+}

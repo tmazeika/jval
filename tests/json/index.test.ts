@@ -1,25 +1,24 @@
-import { array, custom } from '../../src';
-import { TypeCodec, createCodec, isJsonValue, JsonValue } from '../../src/json';
+import { $array, $custom } from '../../src';
+import { createCodec, isJsonValue, JsonValue, TypeCodec } from '../../src/json';
 
-describe('json codec', () => {
+describe('json', () => {
   it('can encode and decode a map', () => {
     const mapCodec: TypeCodec<
       Map<JsonValue, JsonValue>,
       [JsonValue, JsonValue][]
     > = {
-      jsonSchema: array(
-        array(custom(isJsonValue), { length: 2 as const }),
-      ).withMapper((v) => new Map(v)),
-
-      isType: (v: unknown): v is Map<JsonValue, JsonValue> =>
+      jsonSchema: $array($array($custom(isJsonValue)).length(2)).thenMap(
+        (v) => new Map(v),
+      ),
+      isType: (v): v is Map<JsonValue, JsonValue> =>
         v instanceof Map &&
         Array.from(v.entries()).every(
           ([k, v]) => isJsonValue(k) && isJsonValue(v),
         ),
-
       toJson: (v) => Array.from(v.entries()),
     };
     const codec = createCodec(mapCodec);
+
     expect(
       codec.encode({
         a: 1,

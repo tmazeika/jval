@@ -1,58 +1,43 @@
-import { Schema, Valid, WithValidator } from './schema';
+import { BaseSchema, Schema, WithValidator } from './schema';
 
-export class NumberSchema extends Schema<number> {
-  isType(v: unknown): v is number {
+export class NumberSchema extends BaseSchema<number> {
+  override isType(v: unknown): v is number {
     return typeof v === 'number';
   }
+}
 
-  isValid(v: number): v is Valid<number> {
-    return true;
+export class AnyNumberSchema extends NumberSchema {
+  min(n: number): AnyNumberSchema {
+    return new (WithValidator(AnyNumberSchema, (v: number) => v >= n))();
   }
 
-  map(v: number): number {
-    return v;
+  max(n: number): AnyNumberSchema {
+    return new (WithValidator(AnyNumberSchema, (v: number) => v <= n))();
+  }
+
+  int(): AnyNumberSchema {
+    return new (WithValidator(AnyNumberSchema, Number.isSafeInteger))();
+  }
+
+  unsafeInt(): AnyNumberSchema {
+    return new (WithValidator(AnyNumberSchema, Number.isInteger))();
+  }
+
+  finite(): AnyNumberSchema {
+    return new (WithValidator(AnyNumberSchema, Number.isFinite))();
   }
 }
 
-export class InexactNumberSchema extends NumberSchema {
-  min(n: number): InexactNumberSchema {
-    return new (WithValidator(InexactNumberSchema, (v: number) => v >= n));
-  }
-
-  max(n: number): InexactNumberSchema {
-    return new (WithValidator(InexactNumberSchema, (v: number) => v <= n));
-  }
-
-  integer(): InexactNumberSchema {
-    return new (WithValidator(InexactNumberSchema, Number.isSafeInteger));
-  }
-
-  unsafeInteger(): InexactNumberSchema {
-    return new (WithValidator(InexactNumberSchema, Number.isInteger));
+export class ExactNumberSchema extends AnyNumberSchema {
+  eq<N extends number>(...ns: N[]): Schema<N> {
+    return new (class extends BaseSchema<N> {
+      override isType(v: unknown): v is N {
+        return ns.some((n) => Object.is(v, n));
+      }
+    })();
   }
 }
 
-export class ExactNumberSchema extends InexactNumberSchema {
-  eq<N extends number>(n: N): Schema<N> {
-    return new class extends Schema<N> {
-      isType(v: unknown): v is N {
-        return Object.is(v, n);
-      }
-
-      isValid(v: N): v is Valid<N> {
-        return Object.is(v, n);
-      }
-
-      map(v: N): N {
-        return v;
-      }
-    };
-  }
-}
-
-/**
- * Creates a value schema for a number.
- */
-export function number(): ExactNumberSchema {
+export function $number(): ExactNumberSchema {
   return new ExactNumberSchema();
 }

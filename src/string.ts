@@ -1,76 +1,44 @@
-import { Schema } from '.';
+import { BaseSchema, Schema, WithValidator } from './schema';
 
-interface Options {
-  /**
-   * When `true`, requires that the string have a length greater than 0. By
-   * default, the string can be empty.
-   */
-  nonempty?: boolean;
-
-  /**
-   * The minimum length of the string, inclusive. By default, this is
-   * effectively 0.
-   */
-  minLength?: number;
-
-  /**
-   * The maximum length of the string, inclusive. By default, there is no
-   * maximum length.
-   */
-  maxLength?: number;
-
-  /**
-   * When set, the string must match exactly one of the strings in this array.
-   */
-  oneOf?: readonly string[];
-
-  /**
-   * When set, the string must match this regular expression.
-   */
-  regExp?: RegExp;
+export class StringSchema extends BaseSchema<string> {
+  override isType(v: unknown): v is string {
+    return typeof v === 'string';
+  }
 }
 
-type NarrowedString<O extends Options> = O['oneOf'] extends readonly (infer T)[]
-  ? T
-  : string;
+export class AnyStringSchema extends StringSchema {
+  minLength(n: number): AnyStringSchema {
+    return new (WithValidator(AnyStringSchema, (v: string) => v.length >= n))();
+  }
 
-/**
- * Creates a value schema for a string.
- *
- * @param options
- */
-export function string<O extends Options>(
-  options?: O,
-): Schema<NarrowedString<O>>;
+  maxLength(n: number): AnyStringSchema {
+    return new (WithValidator(AnyStringSchema, (v: string) => v.length <= n))();
+  }
 
-/**
- * Creates a value schema for a string.
- *
- * @param options
- */
-export function string(options?: Options): Schema<string>;
+  length(n: number): AnyStringSchema {
+    return new (WithValidator(
+      AnyStringSchema,
+      (v: string) => v.length === n,
+    ))();
+  }
 
-/**
- * Creates a value schema for a string.
- *
- * @param options
- */
-export function string(options?: Options): Schema<string> {
-  return new (class extends Schema<string> {
-    isType(v: unknown): v is string {
-      if (typeof v !== 'string') {
-        return false;
+  regExp(regExp: RegExp): AnyStringSchema {
+    return new (WithValidator(AnyStringSchema, (v: string) =>
+      regExp.test(v),
+    ))();
+  }
+}
+
+export class ExactStringSchema extends AnyStringSchema {
+  eq<S extends string>(...ss: S[]): Schema<S> {
+    return new (class extends BaseSchema<S> {
+      override isType(v: unknown): v is S {
+        return ss.some((s) => Object.is(v, s));
       }
-      let ok = !options?.nonempty || v.length > 0;
-      ok &&= options?.minLength === undefined || v.length >= options.minLength;
-      ok &&= options?.maxLength === undefined || v.length <= options.maxLength;
-      ok &&= options?.oneOf === undefined || options.oneOf.includes(v);
-      ok &&= options?.regExp === undefined || options.regExp.test(v);
-      return ok;
-    }
+    })();
+  }
+}
 
-    map(v: string): string {
-      return v;
-    }
-  })();
+export function $string(): ExactStringSchema {
+  return new ExactStringSchema();
 }

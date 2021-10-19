@@ -1,94 +1,79 @@
-import { number } from '../src';
+import { $number } from '../src';
 
-describe('number validation', () => {
-  it('validates a number', () => {
-    expect(number().isType(Number.MIN_VALUE)).toBe(true);
-    expect(number().isType(Number.MAX_VALUE)).toBe(true);
-    expect(number().isType(-32)).toBe(true);
-    expect(number().isType(0)).toBe(true);
-    expect(number().isType(64)).toBe(true);
+describe('$number', () => {
+  it('isType', () => {
+    // ok
+    expect($number().isType(-3)).toBe(true);
+    expect($number().isType(0)).toBe(true);
+    expect($number().isType(10.2)).toBe(true);
+    expect($number().isType(Number.MIN_VALUE)).toBe(true);
+    expect($number().isType(Number.MAX_VALUE)).toBe(true);
+    expect($number().isType(Number.NEGATIVE_INFINITY)).toBe(true);
+    expect($number().isType(Number.POSITIVE_INFINITY)).toBe(true);
+    expect($number().isType(Number.NaN)).toBe(true);
+
+    // bad
+    expect($number().isType(true)).toBe(false);
+    expect($number().isType([1, 'a'])).toBe(false);
+    expect($number().isType(null)).toBe(false);
+    expect($number().isType({ a: 1 })).toBe(false);
+    expect($number().isType('a')).toBe(false);
+    expect($number().isType(undefined)).toBe(false);
   });
-  it('validates a nullable number', () => {
-    expect(number().nullable().isType(1)).toBe(true);
-    expect(number().nullable().isType(null)).toBe(true);
-    expect(number().nullable().isType(undefined)).toBe(false);
+
+  it('isValid min', () => {
+    expect($number().min(2).isValid(-3)).toBe(false);
+    expect($number().min(2).isValid(2)).toBe(true);
+    expect($number().min(2).isValid(5.1)).toBe(true);
   });
-  it('validates an optional number', () => {
-    const s = number().optional();
-    expect(s.isType(1)).toBe(true);
-    expect(s.isType(null)).toBe(false);
-    expect(s.isType(undefined)).toBe(true);
+
+  it('isValid max', () => {
+    expect($number().max(2).isValid(-3)).toBe(true);
+    expect($number().max(2).isValid(2)).toBe(true);
+    expect($number().max(2).isValid(5)).toBe(false);
   });
-  it('validates an optional and nullable number', () => {
-    const s1 = number().nullable().optional();
-    expect(s1.isType(1)).toBe(true);
-    expect(s1.isType(null)).toBe(true);
-    expect(s1.isType(undefined)).toBe(true);
-    const s2 = number().optional().nullable();
-    expect(s2.isType(1)).toBe(true);
-    expect(s2.isType(null)).toBe(true);
-    expect(s2.isType(undefined)).toBe(true);
+
+  it('isValid int', () => {
+    expect($number().int().isValid(-3)).toBe(true);
+    expect($number().int().isValid(0.33)).toBe(false);
+    expect($number().int().isValid(Number.MAX_SAFE_INTEGER)).toBe(true);
+    expect($number().int().isValid(Number.NaN)).toBe(false);
+    expect($number().int().isValid(Number.POSITIVE_INFINITY)).toBe(false);
   });
-  it('transforms a number', () => {
-    const s1 = number().withMapper((v) => v + 1);
-    expect(s1.withMapper((v) => v - 1).map(3)).toBe(3);
-    expect(s1.map(1)).toBe(2);
-    const s2 = number()
-      .withMapper(() => 5)
-      .optional();
-    expect(s2.map(undefined)).toBe(undefined);
-    expect(s2.map(6)).toBe(5);
-    const s3 = number()
-      .withMapper((v) => v + 1)
-      .withMapper((v) => v * 2);
-    expect(s3.map(5)).toBe(12);
+
+  it('isValid unsafeInt', () => {
+    expect($number().unsafeInt().isValid(8)).toBe(true);
+    expect($number().unsafeInt().isValid(0.33)).toBe(false);
+    expect(
+      $number()
+        .unsafeInt()
+        .isValid(Number.MAX_SAFE_INTEGER + 1),
+    ).toBe(true);
+    expect($number().unsafeInt().isValid(Number.MAX_SAFE_INTEGER)).toBe(true);
+    expect($number().unsafeInt().isValid(Number.NaN)).toBe(false);
+    expect($number().unsafeInt().isValid(Number.POSITIVE_INFINITY)).toBe(false);
   });
-  it('rejects a non-number', () => {
-    const s = number();
-    expect(s.isType(Number.NaN)).toBe(false);
-    expect(s.isType(Number.NEGATIVE_INFINITY)).toBe(false);
-    expect(s.isType(Number.POSITIVE_INFINITY)).toBe(false);
-    expect(s.isType([])).toBe(false);
-    expect(s.isType(true)).toBe(false);
-    expect(s.isType({})).toBe(false);
-    expect(s.isType('a')).toBe(false);
-    expect(s.isType(null)).toBe(false);
-    expect(s.isType(undefined)).toBe(false);
+
+  it('isValid finite', () => {
+    expect($number().finite().isValid(8)).toBe(true);
+    expect($number().finite().isValid(3.14)).toBe(true);
+    expect($number().finite().isValid(Number.MAX_VALUE)).toBe(true);
+    expect($number().finite().isValid(Number.NEGATIVE_INFINITY)).toBe(false);
+    expect($number().unsafeInt().isValid(Number.NaN)).toBe(false);
+    expect($number().finite().isValid(Number.POSITIVE_INFINITY)).toBe(false);
   });
-  it('enforces a minimum number', () => {
-    const s = number({ min: 3 });
-    expect(s.isType(2)).toBe(false);
-    expect(s.isType(3)).toBe(true);
-    expect(s.isType(4.1)).toBe(true);
-  });
-  it('enforces a maximum number', () => {
-    const s = number({ max: 3 });
-    expect(s.isType(2.5)).toBe(true);
-    expect(s.isType(3)).toBe(true);
-    expect(s.isType(4)).toBe(false);
-  });
-  it('enforces an integer', () => {
-    const s = number({ integer: true });
-    expect(s.isType(2)).toBe(true);
-    expect(s.isType(3)).toBe(true);
-    expect(s.isType(4.5)).toBe(false);
-    expect(s.isType(Number.MAX_VALUE)).toBe(false);
-    expect(s.isType(Number.MIN_VALUE)).toBe(false);
-    expect(s.isType(Number.MAX_SAFE_INTEGER)).toBe(true);
-    expect(s.isType(Number.MIN_SAFE_INTEGER)).toBe(true);
-  });
-  it('can allow infinite', () => {
-    const s = number({ allowInfinite: true });
-    expect(s.isType(Number.POSITIVE_INFINITY)).toBe(true);
-    expect(s.isType(Number.NEGATIVE_INFINITY)).toBe(true);
-    expect(s.isType(3)).toBe(true);
-    expect(s.isType(Number.NaN)).toBe(false);
-  });
-  it('enforces a minimum and maximum number', () => {
-    const s = number({ min: 1, max: 3 });
-    expect(s.isType(-5)).toBe(false);
-    expect(s.isType(1)).toBe(true);
-    expect(s.isType(2)).toBe(true);
-    expect(s.isType(4)).toBe(false);
+
+  it('map', () => {
+    expect($number().map(99)).toBe(99);
+    expect(
+      $number()
+        .thenMap((v) => (v ? 2 : 0))
+        .map(8),
+    ).toBe(2);
+    expect(
+      $number()
+        .thenMap((v) => (v ? 2 : 0))
+        .map(0),
+    ).toBe(0);
   });
 });
