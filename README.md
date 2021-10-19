@@ -180,9 +180,9 @@ inside a Set inside a Map.
 
 There are several built-in codecs to make your life easier:
 
-- `dateCodec` &ndash; Date &harr; ISO 8601 string
-- `mapCodec` &ndash; ES6 Map &harr; array of KV tuples
-- `setCodec` &ndash; ES6 Set &harr; array of values
+- `dateCodec` &ndash; Date &rarr; ISO 8601 string
+- `mapCodec` &ndash; ES6 Map &rarr; array of KV tuples
+- `setCodec` &ndash; ES6 Set &rarr; array of values
 
 ### Custom JSON types
 
