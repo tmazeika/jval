@@ -1,8 +1,10 @@
 import { $array, $tuple, $unknown } from '..';
 import { TypeCodec } from './index';
 
-export const mapCodec: TypeCodec<
-  Map<unknown, unknown>,
+/**
+ * Supports ES6 Map types.
+ */
+export const mapCodec: TypeCodec<Map<unknown, unknown>,
   [unknown, unknown][]
 > = {
   schema: $array($tuple($unknown(), $unknown())).thenMap((v) => new Map(v)),

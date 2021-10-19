@@ -178,11 +178,20 @@ inside a Set inside a Map.
 
 ### Built-in codecs
 
-There are several built-in codecs to make your life easier:
+There are several built-in codecs to make life easier:
 
-- `dateCodec` &ndash; Date &rarr; ISO 8601 string
-- `mapCodec` &ndash; ES6 Map &rarr; array of KV tuples
-- `setCodec` &ndash; ES6 Set &rarr; array of values
+- `bigIntCodec`
+  &ndash; [BigInt](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt)
+  &rarr; string
+- `dateCodec`
+  &ndash; [Date](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date)
+  &rarr; ISO 8601 string
+- `mapCodec`
+  &ndash; [Map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map)
+  &rarr; array of KV tuples
+- `setCodec`
+  &ndash; [Set](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set)
+  &rarr; array of values
 
 ### Custom JSON types
 

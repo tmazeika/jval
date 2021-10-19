@@ -1,15 +1,35 @@
-import { createCodec, dateCodec, mapCodec } from '../../src/json';
+import {
+  bigIntCodec,
+  createCodec,
+  dateCodec,
+  mapCodec,
+  setCodec,
+} from '../../src/json';
 
 describe('json', () => {
-  it('TypeCodec example', () => {
+  it('supports BigInt', () => {
+    const codec = createCodec(bigIntCodec);
+    const decoded = BigInt('1');
+    const encoded = '{"$type":0,"value":"1"}';
+    expect(codec.encode(decoded)).toBe(encoded);
+    expect(codec.decode(encoded)).toEqual(decoded);
+  });
+
+  it('supports Date', () => {
     const codec = createCodec(dateCodec);
-    const foo = { a: 1, b: new Date(0) };
-    const encoded = codec.encode(foo);
-    expect(encoded).toBe(
-      '{"a":1,"b":{"$type":0,"value":"1970-01-01T00:00:00.000Z"}}',
-    );
-    const decoded = codec.decode(encoded);
-    expect(decoded).toEqual(foo);
+    const decoded = { a: 1, b: new Date(0) };
+    const encoded =
+      '{"a":1,"b":{"$type":0,"value":"1970-01-01T00:00:00.000Z"}}';
+    expect(codec.encode(decoded)).toBe(encoded);
+    expect(codec.decode(encoded)).toEqual(decoded);
+  });
+
+  it('supports Set', () => {
+    const codec = createCodec(setCodec);
+    const decoded = new Set([1, 2, 2]);
+    const encoded = '{"$type":0,"value":[1,2]}';
+    expect(codec.encode(decoded)).toBe(encoded);
+    expect(codec.decode(encoded)).toEqual(decoded);
   });
 
   it('can encode and decode recursively', () => {
