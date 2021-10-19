@@ -14,8 +14,8 @@ export abstract class Schema<T, U = T> implements ValidatorAndMapper<T, U> {
     const isValid = this.isValid.bind(this);
     const map = this.map.bind(this);
     return new (class extends Schema<T, U> {
-      override isType = isType
-      override map = map
+      override isType = isType;
+      override map = map;
 
       override isValid(v: T): boolean {
         return isValid(v) && validator(map(v));

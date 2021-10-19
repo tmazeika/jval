@@ -20,6 +20,10 @@ describe('$null', () => {
 
   it('map', () => {
     expect($null().map(null)).toBe(null);
-    expect($null().thenMap(v => v ? 2 : 0).map(null)).toBe(0);
+    expect(
+      $null()
+        .thenMap((v) => (v ? 2 : 0))
+        .map(null),
+    ).toBe(0);
   });
 });

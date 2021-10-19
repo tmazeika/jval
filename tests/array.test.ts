@@ -51,11 +51,23 @@ describe('$array', () => {
   });
 
   it('thenMap', () => {
-    expect($array($unknown()).thenMap((v) => v[1]).map(['a', 1])).toBe(1);
+    expect(
+      $array($unknown())
+        .thenMap((v) => v[1])
+        .map(['a', 1]),
+    ).toBe(1);
   });
 
   it('thenValidate', () => {
-    expect($array($unknown()).thenValidate((v) => v[1] === 1).isValid(['a', 1])).toBe(true);
-    expect($array($unknown()).thenValidate((v) => v[0] === 'b').isValid(['a', 1])).toBe(false);
+    expect(
+      $array($unknown())
+        .thenValidate((v) => v[1] === 1)
+        .isValid(['a', 1]),
+    ).toBe(true);
+    expect(
+      $array($unknown())
+        .thenValidate((v) => v[0] === 'b')
+        .isValid(['a', 1]),
+    ).toBe(false);
   });
 });

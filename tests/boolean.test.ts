@@ -24,6 +24,10 @@ describe('$boolean', () => {
   it('map', () => {
     expect($boolean().map(true)).toBe(true);
     expect($boolean().map(false)).toBe(false);
-    expect($boolean().thenMap(v => v ? 2 : 0).map(true)).toBe(2);
+    expect(
+      $boolean()
+        .thenMap((v) => (v ? 2 : 0))
+        .map(true),
+    ).toBe(2);
   });
 });
