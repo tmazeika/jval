@@ -54,7 +54,7 @@ We can add validation of our own:
 const nonemptyString = $string().thenValidate((v) => v.trim().length > 0);
 
 nonemptyString.isValid('Hello, jval!'); // true
-nonemptyString.isValid('    ');         // false
+nonemptyString.isValid('    '); // false
 ```
 
 ## Custom types
@@ -92,10 +92,10 @@ if (schema.isType(v)) {
 This works for some other schema types as well.
 
 ```ts
-$array($string()).length(2);  // type: [string, string]
-$boolean().eq(true);          // type: true
-$number().eq(1, 2);           // type: 1 | 2
-$string().eq('a', 'b');       // type: 'a' | 'b'
+$array($string()).length(2); // type: [string, string]
+$boolean().eq(true); // type: true
+$number().eq(1, 2); // type: 1 | 2
+$string().eq('a', 'b'); // type: 'a' | 'b'
 $tuple($number(), $string()); // type: [number, string]
 ```
 
@@ -132,7 +132,7 @@ All schemas have an `or` function to turn a schema into an either-or schema.
 const schema = $string().or($number());
 
 schema.isType('Howdy!'); // true
-schema.isType(3.14159);  // true
+schema.isType(3.14159); // true
 ```
 
 Feel free to chain it...
