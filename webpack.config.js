@@ -18,10 +18,7 @@ export default {
   output: {
     path: path.resolve('dist'),
     filename: 'index.js',
-    library: {
-      name: 'jval',
-      type: 'umd',
-    },
+    library: 'jval',
     globalObject: 'this',
     clean: true,
   },

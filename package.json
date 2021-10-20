@@ -1,18 +1,15 @@
 {
   "name": "jval",
-  "version": "0.1.11",
+  "version": "0.1.13",
   "description": "Simple and extensible JavaScript value validator and transformer.",
   "author": "TJ Mazeika <mazeika.tj@gmail.com>",
   "license": "MIT",
   "repository": "github:tmazeika/jval",
   "bugs": "https://github.com/tmazeika/jval/issues",
-  "type": "module",
   "main": "dist/index.js",
-  "module": "src/index.ts",
   "files": [
     "dist"
   ],
-  "sideEffects": false,
   "scripts": {
     "prepack": "yarn lint && yarn test && yarn build",
     "build": "webpack",
