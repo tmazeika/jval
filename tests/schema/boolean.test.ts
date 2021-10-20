@@ -1,4 +1,4 @@
-import { $boolean } from '../src';
+import { $boolean } from '../../src/index';
 
 describe('$boolean', () => {
   it('isType', () => {

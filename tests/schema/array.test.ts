@@ -1,4 +1,4 @@
-import { $array, $number, $string, $unknown } from '../src';
+import { $array, $number, $string, $unknown } from '../../src/index';
 
 describe('$array', () => {
   it('isType', () => {

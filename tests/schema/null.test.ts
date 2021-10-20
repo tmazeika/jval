@@ -1,4 +1,4 @@
-import { $null } from '../src';
+import { $null } from '../../src/index';
 
 describe('$null', () => {
   it('isType', () => {

@@ -1,6 +1,6 @@
-import path from 'path';
+const path = require('path');
 
-export default {
+module.exports = {
   entry: './src/index.ts',
   mode: 'production',
   module: {
@@ -16,9 +16,12 @@ export default {
     extensions: ['.ts', '.js'],
   },
   output: {
-    path: path.resolve('dist'),
+    path: path.resolve(__dirname, 'dist'),
     filename: 'index.js',
-    library: 'jval',
+    library: {
+      name: 'jval',
+      type: 'umd',
+    },
     globalObject: 'this',
     clean: true,
   },

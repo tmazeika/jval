@@ -1,4 +1,4 @@
-import { $custom } from '../src';
+import { $custom } from '../../src/index';
 
 describe('$custom', () => {
   const boolean = $custom((v): v is boolean => typeof v === 'boolean');

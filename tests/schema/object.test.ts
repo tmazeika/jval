@@ -1,4 +1,4 @@
-import { $boolean, $number, $object, $string } from '../src';
+import { $boolean, $number, $object, $string } from '../../src/index';
 
 describe('$object', () => {
   it('isType', () => {

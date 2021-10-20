@@ -1,4 +1,4 @@
-import { $number } from '../src';
+import { $number } from '../../src/index';
 
 describe('$number', () => {
   it('isType', () => {

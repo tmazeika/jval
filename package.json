@@ -1,22 +1,25 @@
 {
   "name": "jval",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "description": "Simple and extensible JavaScript value validator and transformer.",
   "author": "TJ Mazeika <mazeika.tj@gmail.com>",
   "license": "MIT",
   "repository": "github:tmazeika/jval",
   "bugs": "https://github.com/tmazeika/jval/issues",
-  "main": "dist/jval.js",
+  "main": "dist/jval.cjs.js",
+  "module": "dist/jval.esm.js",
+  "browser": "dist/jval.umd.js",
   "files": [
     "dist"
   ],
   "scripts": {
     "prepack": "yarn lint && yarn test && yarn build",
-    "build": "webpack",
+    "build": "rm -rf dist && tsc && rollup -c",
     "test": "jest",
     "lint": "eslint --fix . && prettier --write ."
   },
   "devDependencies": {
+    "@rollup/plugin-typescript": "^8.3.0",
     "@types/jest": "27.0.2",
     "@types/node": "^16.11.1",
     "@typescript-eslint/eslint-plugin": "^5.1.0",
@@ -27,11 +30,10 @@
     "eslint-plugin-jest": "^25.2.2",
     "jest": "27.0.2",
     "prettier": "^2.4.1",
+    "rollup": "^2.58.0",
+    "rollup-plugin-terser": "^7.0.2",
     "ts-jest": "^27.0.7",
-    "ts-loader": "^9.2.6",
-    "typescript": "^4.4.4",
-    "webpack": "^5.58.2",
-    "webpack-cli": "^4.9.1"
+    "typescript": "^4.4.4"
   },
   "keywords": [
     "validation",
