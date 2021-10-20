@@ -1,5 +1,5 @@
-import { $string } from '..';
-import { TypeCodec } from './index';
+import { $string } from '../schema';
+import { TypeCodec } from './codec';
 
 /**
  * Supports BigInt types.

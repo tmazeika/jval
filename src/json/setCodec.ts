@@ -1,5 +1,5 @@
-import { $array, $unknown } from '..';
-import { TypeCodec } from './index';
+import { $array, $unknown } from '../schema';
+import { TypeCodec } from './codec';
 
 /**
  * Supports ES6 Set types.

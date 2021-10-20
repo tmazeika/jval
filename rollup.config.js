@@ -1,28 +1,23 @@
-const path = require('path');
+import typescript from '@rollup/plugin-typescript';
+import { terser } from 'rollup-plugin-terser';
+import pkg from './package.json';
 
-module.exports = {
-  entry: './src/index.ts',
-  mode: 'production',
-  module: {
-    rules: [
-      {
-        test: /\.ts$/,
-        use: 'ts-loader',
-        exclude: /node_modules/,
-      },
-    ],
-  },
-  resolve: {
-    extensions: ['.ts', '.js'],
-  },
-  output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'index.js',
-    library: {
+export default [
+  {
+    input: 'src/index.ts',
+    output: {
       name: 'jval',
-      type: 'umd',
+      file: pkg.browser,
+      format: 'umd',
     },
-    globalObject: 'this',
-    clean: true,
+    plugins: [typescript(), terser({ format: { comments: false } })],
   },
-};
+  {
+    input: 'src/index.ts',
+    output: [
+      { file: pkg.main, format: 'cjs' },
+      { file: pkg.module, format: 'es' },
+    ],
+    plugins: [typescript(), terser({ format: { comments: false } })],
+  },
+];
