@@ -1,8 +1,5 @@
 {
   "root": true,
-  "env": {
-    "node": true
-  },
   "parser": "@typescript-eslint/parser",
   "plugins": ["@typescript-eslint", "import", "jest"],
   "extends": [
@@ -12,5 +9,13 @@
     "plugin:import/typescript",
     "plugin:jest/recommended",
     "prettier"
+  ],
+  "overrides": [
+    {
+      "files": ["./*.js"],
+      "env": {
+        "node": true
+      }
+    }
   ]
 }
