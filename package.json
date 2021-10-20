@@ -1,6 +1,6 @@
 {
   "name": "jval",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "Simple and extensible JavaScript value validator and transformer.",
   "author": "TJ Mazeika <mazeika.tj@gmail.com>",
   "license": "MIT",
@@ -14,7 +14,7 @@
   ],
   "scripts": {
     "prepack": "yarn lint && yarn test && yarn build",
-    "build": "rm -rf dist && tsc && rollup -c",
+    "build": "rm -rf dist && tsc --out dist/jval.d.ts && rollup -c",
     "test": "jest",
     "lint": "eslint --fix . && prettier --write ."
   },
